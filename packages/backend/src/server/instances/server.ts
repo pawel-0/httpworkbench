@@ -1,7 +1,7 @@
 import { listen, type Socket } from "bun";
 import { type Log } from "shared";
 import { addLogWithOutcome } from "../../storage";
-import { getServableInstanceById } from "../../storage/repositories/instances";
+import { getServableInstanceBySubdomain } from "../../storage/repositories/instances";
 import { broadcastLog } from "./logStream";
 import { HttpRequestBuffer } from "./httpBuffer";
 import {
@@ -99,7 +99,7 @@ const tryLogInteraction = <T>(
       return false;
     }
 
-    const instance = getServableInstanceById(result.instanceId);
+    const instance = getServableInstanceBySubdomain(result.instanceId);
     if (instance === undefined) {
       return false;
     }
@@ -177,7 +177,7 @@ export const createInstancesServer = (
             return;
           }
 
-          const instance = getServableInstanceById(result.instanceId);
+          const instance = getServableInstanceBySubdomain(result.instanceId);
           if (!instance) {
             respond(
               socket,

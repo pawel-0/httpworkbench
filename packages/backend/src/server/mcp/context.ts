@@ -1,5 +1,10 @@
 import type { ServerContext } from "@modelcontextprotocol/server";
-import type { ApiKeyScope, Instance, InstanceSummary } from "shared";
+import {
+  getInstanceSubdomain,
+  type ApiKeyScope,
+  type Instance,
+  type InstanceSummary,
+} from "shared";
 import type { ApiKeyAuthContext } from "../apiKeyAuth";
 import { hasApiKeyScope } from "../apiKeyAuth";
 import { getOwnedInstance } from "../instances/service";
@@ -41,11 +46,12 @@ export const requireOwnedInstance = (
 
 export const serializeInstance = (instance: Instance) => ({
   ...instance,
-  url: `${instance.id}.${Bun.env.INSTANCES_DOMAIN ?? ""}`,
+  url: `${getInstanceSubdomain(instance)}.${Bun.env.INSTANCES_DOMAIN ?? ""}`,
 });
 
 export const serializeInstanceSummary = (instance: InstanceSummary) => ({
   id: instance.id,
+  subdomain: getInstanceSubdomain(instance),
   ownerId: instance.ownerId,
   createdAt: instance.createdAt,
   expiresAt: instance.expiresAt,
@@ -53,5 +59,5 @@ export const serializeInstanceSummary = (instance: InstanceSummary) => ({
   public: instance.public,
   locked: instance.locked,
   logCount: instance.logCount,
-  url: `${instance.id}.${Bun.env.INSTANCES_DOMAIN ?? ""}`,
+  url: `${getInstanceSubdomain(instance)}.${Bun.env.INSTANCES_DOMAIN ?? ""}`,
 });

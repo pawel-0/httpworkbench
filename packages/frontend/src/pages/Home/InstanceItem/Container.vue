@@ -29,7 +29,7 @@ const deleteMutation = useDeleteInstance();
 const cloneMutation = useCloneInstance();
 const prefetchInstanceDetail = usePrefetchInstanceDetail();
 
-const instanceHost = computed(() => config.getInstanceHost(instance.value.id));
+const instanceHost = computed(() => config.getInstanceHost(instance.value));
 
 const displayName = computed(() => {
   const label = instance.value.label;

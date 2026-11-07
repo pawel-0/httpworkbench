@@ -1,4 +1,12 @@
-import { buildPublicConfig, resolveDomain } from "shared";
+import {
+  buildPublicConfig,
+  resolveDomain,
+  getInstanceSubdomain,
+  type Instance,
+} from "shared";
+
+const hostnameLabel = (value: string | Pick<Instance, "id" | "subdomain">) =>
+  typeof value === "string" ? value : getInstanceSubdomain(value);
 
 declare const __APP_VERSION__: string;
 
@@ -33,9 +41,10 @@ export const buildConfig = (
     version,
     domain,
     githubRepo: "bebiksior/httpworkbench",
-    getInstanceHost: (id: string) => `${id}.${appConfig.instancesDomain}`,
-    getInstanceUrl: (id: string) =>
-      `https://${id}.${appConfig.instancesDomain}`,
+    getInstanceHost: (instance: string | Pick<Instance, "id" | "subdomain">) =>
+      `${hostnameLabel(instance)}.${appConfig.instancesDomain}`,
+    getInstanceUrl: (instance: string | Pick<Instance, "id" | "subdomain">) =>
+      `https://${hostnameLabel(instance)}.${appConfig.instancesDomain}`,
   } as const;
 };
 

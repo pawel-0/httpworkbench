@@ -1,4 +1,9 @@
-import { GUEST_OWNER_ID, type Instance, type InstanceSummary } from "shared";
+import {
+  GUEST_OWNER_ID,
+  getInstanceSubdomain,
+  type Instance,
+  type InstanceSummary,
+} from "shared";
 import { InstanceSchema } from "shared";
 import {
   and,
@@ -57,7 +62,10 @@ const replaceInstanceWebhooks = (
 };
 
 export function addInstance(instance: Instance): Instance {
-  const parsed = InstanceSchema.parse(instance);
+  const parsed = InstanceSchema.parse({
+    ...instance,
+    subdomain: getInstanceSubdomain(instance),
+  });
   getDb().transaction(
     (tx) => {
       tx.insert(instances).values(toInstanceRow(parsed)).run();
@@ -69,7 +77,10 @@ export function addInstance(instance: Instance): Instance {
 }
 
 export function addGuestInstance(instance: Instance): Instance {
-  const parsed = InstanceSchema.parse(instance);
+  const parsed = InstanceSchema.parse({
+    ...instance,
+    subdomain: getInstanceSubdomain(instance),
+  });
   if (parsed.ownerId !== GUEST_OWNER_ID || parsed.webhookIds.length !== 0) {
     throw new Error("Invalid guest instance");
   }
@@ -83,6 +94,7 @@ export function getInstanceSummariesByOwner(
   const rows = getDb()
     .select({
       id: instances.id,
+      subdomain: instances.subdomain,
       ownerId: instances.ownerId,
       createdAt: instances.createdAt,
       expiresAt: instances.expiresAt,
@@ -114,6 +126,7 @@ export function getInstanceSummariesByIds(
   const rows = getDb()
     .select({
       id: instances.id,
+      subdomain: instances.subdomain,
       ownerId: instances.ownerId,
       createdAt: instances.createdAt,
       expiresAt: instances.expiresAt,
@@ -166,6 +179,58 @@ export function getInstanceById(id: string): Instance | undefined {
 }
 
 export type ServableInstance = Pick<Instance, "id" | "raw">;
+
+export function getServableInstanceBySubdomain(
+  subdomain: string,
+): ServableInstance | undefined {
+  return getDb()
+    .select({ id: instances.id, raw: instances.raw })
+    .from(instances)
+    .where(
+      and(
+        eq(instances.subdomain, subdomain),
+        activeInstanceCondition(Date.now()),
+      ),
+    )
+    .get();
+}
+
+export function getInstanceIdBySubdomain(
+  subdomain: string,
+): string | undefined {
+  return getDb()
+    .select({ id: instances.id })
+    .from(instances)
+    .where(
+      and(
+        eq(instances.subdomain, subdomain),
+        activeInstanceCondition(Date.now()),
+      ),
+    )
+    .get()?.id;
+}
+
+export function isInstanceIdentifierTaken(value: string): boolean {
+  return (
+    getDb()
+      .select({ id: instances.id })
+      .from(instances)
+      .where(or(eq(instances.id, value), eq(instances.subdomain, value)))
+      .get() !== undefined
+  );
+}
+
+export function setInstanceSubdomain(
+  id: string,
+  subdomain: string,
+): Instance | undefined {
+  getDb()
+    .update(instances)
+    .set({ subdomain })
+    .where(and(eq(instances.id, id), activeInstanceCondition(Date.now())))
+    .run();
+  return getInstanceById(id);
+}
 
 export type InstanceAccessMetadata = Pick<
   Instance,

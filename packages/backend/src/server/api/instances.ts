@@ -8,6 +8,7 @@ import {
   RenameInstanceSchema,
   SetInstanceLockedSchema,
   SetInstancePublicSchema,
+  SetInstanceSubdomainSchema,
   UpdateInstanceSchema,
 } from "shared";
 import {
@@ -34,6 +35,7 @@ import {
   createInstance,
   getOwnedInstance,
   replaceInstance,
+  changeInstanceSubdomain,
   type InstanceServiceError,
 } from "../instances/service";
 import { clampLogLimit, decodeLogsCursor, encodeLogsCursor } from "../utils";
@@ -346,6 +348,27 @@ export const instancesRoutes = new Elysia({ name: "routes/instances" })
         tags: ["Logs"],
         summary: "Clear instance logs",
         description: "Permanently remove all logs for an owned instance.",
+      },
+    },
+  )
+  .patch(
+    "/api/instances/:id/subdomain",
+    ({ params, body, user }) => {
+      const result = changeInstanceSubdomain(
+        params.id,
+        user.id,
+        body.subdomain,
+      );
+      return result.ok ? result.value : serviceErrorResponse(result.error);
+    },
+    {
+      scope: "instances:write",
+      body: SetInstanceSubdomainSchema,
+      detail: {
+        tags: ["Instances"],
+        summary: "Change an instance hostname",
+        description:
+          "Change the subdomain while keeping the internal ID, response, settings, and logs. The previous hostname stops serving this instance.",
       },
     },
   )

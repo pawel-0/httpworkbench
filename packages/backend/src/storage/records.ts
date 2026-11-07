@@ -1,5 +1,6 @@
 import {
   InstanceModerationSchema,
+  getInstanceSubdomain,
   InstanceSchema,
   InstanceSummarySchema,
   UserNoticeSchema,
@@ -32,6 +33,7 @@ export const toDomainInstance = (
 ): Instance =>
   InstanceSchema.parse({
     id: row.id,
+    subdomain: row.subdomain ?? row.id,
     ownerId: row.ownerId,
     createdAt: row.createdAt,
     expiresAt: row.expiresAt ?? undefined,
@@ -47,6 +49,7 @@ export const toDomainInstanceSummary = (
 ): InstanceSummary =>
   InstanceSummarySchema.parse({
     id: row.id,
+    subdomain: row.subdomain ?? row.id,
     ownerId: row.ownerId,
     createdAt: row.createdAt,
     expiresAt: row.expiresAt ?? undefined,
@@ -60,6 +63,7 @@ export const toInstanceRow = (instance: Instance): InstanceInsertRow => {
   const parsed = InstanceSchema.parse(instance);
   return {
     id: parsed.id,
+    subdomain: getInstanceSubdomain(parsed),
     ownerId: parsed.ownerId,
     createdAt: parsed.createdAt,
     expiresAt: parsed.expiresAt ?? null,

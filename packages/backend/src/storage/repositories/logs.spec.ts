@@ -459,6 +459,7 @@ describe("addLog", () => {
     }
     expect(summary).toEqual({
       id: "inst-1",
+      subdomain: "inst-1",
       ownerId: "user-1",
       createdAt: 1,
       public: false,

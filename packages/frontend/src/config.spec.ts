@@ -2,6 +2,18 @@ import { describe, expect, test } from "vitest";
 import { buildConfig } from "./config";
 
 describe("frontend config", () => {
+  test("uses the editable subdomain while leaving the internal ID unchanged", () => {
+    const config = buildConfig(
+      { VITE_DOMAIN: "example.com", VITE_INSTANCES_DOMAIN: "example.com" },
+      "test-version",
+    );
+    const instance = { id: "abcd1234", subdomain: "my-poc" };
+    expect(config.getInstanceHost(instance)).toBe("my-poc.example.com");
+    expect(config.getInstanceUrl(instance)).toBe("https://my-poc.example.com");
+    expect(config.getInstanceHost({ id: "abcd1234" })).toBe(
+      "abcd1234.example.com",
+    );
+  });
   test("falls back to instances.<domain> when instances domain is unset", () => {
     const config = buildConfig(
       {

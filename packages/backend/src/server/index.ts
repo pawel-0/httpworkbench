@@ -8,7 +8,7 @@ import {
   addLogWithOutcome,
   flushPendingWebhookNotifications,
   getInstanceAccessMetadata,
-  hasActiveInstance,
+  getInstanceIdBySubdomain,
   removeExpiredInstances,
 } from "../storage";
 import { dnsConfig, instancePolicies, smtpConfig } from "../config";
@@ -165,7 +165,8 @@ export const initServer = async () => {
     ? await createDnsServer({
         config: dnsConfig,
         deps: {
-          hasActiveInstance: async (id) => hasActiveInstance(id),
+          resolveInstanceId: async (subdomain) =>
+            getInstanceIdBySubdomain(subdomain),
           addLog: addLogWithOutcome,
           broadcastLog,
           createId: () => crypto.randomUUID(),
@@ -178,7 +179,8 @@ export const initServer = async () => {
     ? await createSmtpServer({
         config: smtpConfig,
         deps: {
-          hasActiveInstance: async (id) => hasActiveInstance(id),
+          resolveInstanceId: async (subdomain) =>
+            getInstanceIdBySubdomain(subdomain),
           addLog: addLogWithOutcome,
           broadcastLog,
           createId: () => crypto.randomUUID(),

@@ -61,7 +61,7 @@ export const useBuilderPage = (instanceIdRef: Ref<string>) => {
     if (isAbsent(inst)) {
       return undefined;
     }
-    return config.getInstanceUrl(inst.id);
+    return config.getInstanceUrl(inst);
   });
 
   responseEditorStore.setContent(DEFAULT_TEMPLATE, "hydrate");

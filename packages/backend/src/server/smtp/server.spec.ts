@@ -18,7 +18,8 @@ const createCapturingDeps = (knownInstanceId: string) => {
   const broadcasted: Log[] = [];
 
   const deps: SmtpServerDependencies = {
-    hasActiveInstance: async (id) => id === knownInstanceId,
+    resolveInstanceId: async (id: string) =>
+      id === knownInstanceId ? id : undefined,
     addLog: async (log) => {
       added.push(log);
       return log;

@@ -37,6 +37,7 @@ export const instances = sqliteTable(
   "instances",
   {
     id: text("id").primaryKey(),
+    subdomain: text("subdomain"),
     ownerId: text("ownerId").notNull(),
     createdAt: integer("createdAt", { mode: "number" }).notNull(),
     expiresAt: integer("expiresAt", { mode: "number" }),
@@ -46,6 +47,7 @@ export const instances = sqliteTable(
     raw: text("raw").notNull(),
   },
   (table) => [
+    uniqueIndex("instances_subdomain_unique").on(table.subdomain),
     index("instances_by_owner").on(table.ownerId),
     index("instances_by_expiration").on(table.expiresAt),
   ],

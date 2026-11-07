@@ -7,6 +7,7 @@ import type {
   RenameInstanceInput,
   SetInstanceLockedInput,
   SetInstancePublicInput,
+  SetInstanceSubdomainInput,
   UpdateInstanceInput,
 } from "shared";
 import {
@@ -18,6 +19,7 @@ import {
   RenameInstanceSchema,
   SetInstanceLockedSchema,
   SetInstancePublicSchema,
+  SetInstanceSubdomainSchema,
   UpdateInstanceSchema,
 } from "shared";
 import { apiClient } from "../client";
@@ -30,6 +32,16 @@ const recentLogsQuery = (cursor: string) => {
 };
 
 export const instancesApi = {
+  setSubdomain: async (
+    id: string,
+    input: SetInstanceSubdomainInput,
+  ): Promise<Instance> => {
+    const data = await apiClient.patch<unknown>(
+      apiPaths.instanceSubdomain(id),
+      SetInstanceSubdomainSchema.parse(input),
+    );
+    return parseResponse(InstanceSchema, data, "change instance hostname");
+  },
   getAll: async (): Promise<InstanceSummary[]> => {
     const data = await apiClient.get<unknown>(apiPaths.instances);
     return parseResponse(InstancesResponseSchema, data, "instances");

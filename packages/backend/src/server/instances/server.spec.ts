@@ -10,7 +10,7 @@ import {
 
 const addLogMock = mock();
 const broadcastLogMock = mock();
-const getServableInstanceByIdMock = mock();
+const getServableInstanceBySubdomainMock = mock();
 const listenMock = mock();
 let addLogTombstoned = false;
 
@@ -28,7 +28,7 @@ mock.module("../../storage", () => ({
 }));
 
 mock.module("../../storage/repositories/instances", () => ({
-  getServableInstanceById: getServableInstanceByIdMock,
+  getServableInstanceBySubdomain: getServableInstanceBySubdomainMock,
 }));
 
 mock.module("./logStream", () => ({
@@ -112,7 +112,7 @@ describe("createInstancesServer", () => {
     handlers.open(socket);
     await handlers.data(socket, encode(createRawRequest([])));
 
-    expect(getServableInstanceByIdMock).not.toHaveBeenCalled();
+    expect(getServableInstanceBySubdomainMock).not.toHaveBeenCalled();
     expect(decode(socket.write.mock.calls[0]?.[0])).toContain(
       "400 Bad Request",
     );
@@ -125,7 +125,7 @@ describe("createInstancesServer", () => {
   });
 
   test("logs oversized requests when they can be attributed to an instance", async () => {
-    getServableInstanceByIdMock.mockReturnValue(
+    getServableInstanceBySubdomainMock.mockReturnValue(
       createStaticInstance("HTTP/1.1 200 OK\r\n\r\nok"),
     );
     const socket = createSocket();
@@ -164,7 +164,7 @@ describe("createInstancesServer", () => {
 
   test("does not broadcast a log when moderation tombstones an instance", async () => {
     addLogTombstoned = true;
-    getServableInstanceByIdMock.mockReturnValue(
+    getServableInstanceBySubdomainMock.mockReturnValue(
       createStaticInstance("HTTP/1.1 200 OK\r\n\r\nok"),
     );
     const socket = createSocket();
@@ -180,7 +180,7 @@ describe("createInstancesServer", () => {
 
   test("logs sanitized requests and writes large static responses", async () => {
     const body = "a".repeat(1024 * 1024);
-    getServableInstanceByIdMock.mockReturnValue(
+    getServableInstanceBySubdomainMock.mockReturnValue(
       createStaticInstance(
         [
           "HTTP/1.1 200 OK",
@@ -224,7 +224,7 @@ describe("createInstancesServer", () => {
   });
 
   test("persists and broadcasts complete large HTTP interactions", async () => {
-    getServableInstanceByIdMock.mockReturnValue(
+    getServableInstanceBySubdomainMock.mockReturnValue(
       createStaticInstance("HTTP/1.1 200 OK\r\n\r\nok"),
     );
     const body = "a".repeat(2 * 1024 * 1024);
@@ -247,7 +247,7 @@ describe("createInstancesServer", () => {
   });
 
   test("does not serve a cached response after raw content changes", async () => {
-    getServableInstanceByIdMock
+    getServableInstanceBySubdomainMock
       .mockReturnValueOnce(createStaticInstance("HTTP/1.1 200 OK\r\n\r\nfirst"))
       .mockReturnValueOnce(
         createStaticInstance("HTTP/1.1 200 OK\r\n\r\nsecond"),
@@ -271,7 +271,7 @@ describe("createInstancesServer", () => {
   });
 
   test("reuses the encoded response while raw content is unchanged", async () => {
-    getServableInstanceByIdMock.mockReturnValue(
+    getServableInstanceBySubdomainMock.mockReturnValue(
       createStaticInstance("HTTP/1.1 200 OK\r\n\r\ncached"),
     );
     const firstSocket = createSocket();
@@ -294,7 +294,7 @@ describe("createInstancesServer", () => {
   });
 
   test("returns a bad request response when the instance does not exist", async () => {
-    getServableInstanceByIdMock.mockReturnValue(undefined);
+    getServableInstanceBySubdomainMock.mockReturnValue(undefined);
     const socket = createSocket();
 
     handlers.open(socket);
@@ -311,7 +311,7 @@ describe("createInstancesServer", () => {
   });
 
   test("returns an internal server error when log persistence throws", async () => {
-    getServableInstanceByIdMock.mockReturnValue(
+    getServableInstanceBySubdomainMock.mockReturnValue(
       createStaticInstance("HTTP/1.1 200 OK\r\n\r\nok"),
     );
     addLogMock.mockImplementation(() => {

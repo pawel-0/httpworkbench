@@ -143,6 +143,7 @@ describe("authenticated instance routes", () => {
     expect(await response.json()).toEqual([
       {
         id: created.id,
+        subdomain: created.id,
         ownerId: "owner-1",
         createdAt: expect.any(Number),
         public: false,

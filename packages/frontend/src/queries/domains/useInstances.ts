@@ -350,6 +350,22 @@ export const useRenameInstance = () => {
   });
 };
 
+export const useSetInstanceSubdomain = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, subdomain }: { id: string; subdomain: string }) =>
+      instancesApi.setSubdomain(id, { subdomain }),
+    onSuccess: async (instance) => {
+      queryClient.setQueryData<InstanceDetailResponse>(
+        queryKeys.instances.detail(instance.id),
+        (current) =>
+          current === undefined ? undefined : { ...current, instance },
+      );
+      await invalidateInstanceQueries(queryClient, instance.id);
+    },
+  });
+};
+
 export const useSetInstanceLocked = () => {
   const queryClient = useQueryClient();
   const authStore = useAuthStore();

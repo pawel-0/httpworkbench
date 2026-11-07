@@ -199,7 +199,8 @@ describe("createDnsServer", () => {
       config: createTestDnsConfig(),
       deps: {
         ...createBaseDeps(),
-        hasActiveInstance: async (id) => id === "demo",
+        resolveInstanceId: async (id: string) =>
+          id === "demo" ? id : undefined,
         addLog: async (log) => {
           logs.push(log);
           return log;
@@ -256,7 +257,8 @@ describe("createDnsServer", () => {
       config: createTestDnsConfig(),
       deps: {
         ...createBaseDeps(),
-        hasActiveInstance: async (id) => id === "demo",
+        resolveInstanceId: async (id: string) =>
+          id === "demo" ? id : undefined,
         addLog: async (log) => {
           logs.push(log.raw);
           return log;
@@ -293,7 +295,7 @@ describe("createDnsServer", () => {
       config: createTestDnsConfig(),
       deps: {
         ...createBaseDeps(),
-        hasActiveInstance: async () => false,
+        resolveInstanceId: async () => undefined,
         addLog: async (log) => {
           logs.push(log.id);
           return log;
@@ -328,7 +330,7 @@ describe("createDnsServer", () => {
       config: createTestDnsConfig(),
       deps: {
         ...createBaseDeps(),
-        hasActiveInstance: async () => true,
+        resolveInstanceId: async () => "demo",
         addLog: async (log) => {
           logs.push(log.id);
           return log;
@@ -372,7 +374,7 @@ describe("createDnsServer", () => {
       config: createTestDnsConfig(),
       deps: {
         ...createBaseDeps(),
-        hasActiveInstance: async () => true,
+        resolveInstanceId: async () => "demo",
         addLog: async (log) => log,
       },
     });
@@ -402,7 +404,7 @@ describe("createDnsServer", () => {
       config: createTestDnsConfig(),
       deps: {
         ...createBaseDeps(),
-        hasActiveInstance: async () => false,
+        resolveInstanceId: async () => undefined,
         addLog: async (log) => log,
       },
     });
@@ -450,7 +452,8 @@ describe("createDnsServer", () => {
       config: createTestDnsConfig(),
       deps: {
         ...createBaseDeps(),
-        hasActiveInstance: async (id) => id === "demo",
+        resolveInstanceId: async (id: string) =>
+          id === "demo" ? id : undefined,
         addLog: async (log) => {
           logs.push(log.raw);
           return log;
@@ -497,7 +500,8 @@ describe("createDnsServer", () => {
       config: createTestDnsConfig(),
       deps: {
         ...createBaseDeps(),
-        hasActiveInstance: async (id) => id === "demo",
+        resolveInstanceId: async (id: string) =>
+          id === "demo" ? id : undefined,
         addLog: async (log) => {
           logs.push(log.raw);
           return log;
@@ -528,7 +532,7 @@ describe("createDnsServer", () => {
 describe("handleDnsRequest", () => {
   const deps: DnsServerDependencies = {
     ...createBaseDeps(),
-    hasActiveInstance: async (id: string) => id === "demo",
+    resolveInstanceId: async (id: string) => (id === "demo" ? id : undefined),
     addLog: async (log) => log,
   };
 
@@ -854,7 +858,8 @@ describe("handleDnsRequest", () => {
         deps: {
           ...deps,
           now: () => now,
-          hasActiveInstance: async (id: string) => id === "rate",
+          resolveInstanceId: async (id: string) =>
+            id === "rate" ? id : undefined,
           addLog: async (log) => {
             logs.push(log.id);
             return log;
@@ -898,7 +903,8 @@ describe("handleDnsRequest", () => {
       deps: {
         ...deps,
         now: () => now,
-        hasActiveInstance: async (id: string) => id === "rate",
+        resolveInstanceId: async (id: string) =>
+          id === "rate" ? id : undefined,
         addLog: async (log) => {
           logs.push(log.id);
           return log;

@@ -84,7 +84,7 @@ export const useHomeLogic = () => {
 
     const filtered = instances.value.filter((instance: InstanceSummary) => {
       const instanceId = instance.id.toLowerCase();
-      const host = config.getInstanceHost(instance.id).toLowerCase();
+      const host = config.getInstanceHost(instance).toLowerCase();
       const label = instance.label?.toLowerCase() ?? "";
       return (
         instanceId.includes(normalizedQuery.value) ||

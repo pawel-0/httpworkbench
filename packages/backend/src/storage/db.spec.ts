@@ -6,7 +6,11 @@ import { Database } from "bun:sqlite";
 import { readMigrationFiles } from "drizzle-orm/migrator";
 import type { Instance, Log, UserRecord, Webhook } from "shared";
 import { closeDb, getDb, initDb, resolveSqliteDbPath } from "./db";
-import { addInstance } from "./repositories/instances";
+import {
+  addInstance,
+  getInstanceById,
+  getInstanceIdBySubdomain,
+} from "./repositories/instances";
 import { addUser } from "./repositories/users";
 import { addWebhook } from "./repositories/webhooks";
 import { logs } from "./schema";
@@ -158,6 +162,42 @@ describe("storage db migrations", () => {
       usersLength: 1,
       instancesLength: 1,
     });
+  });
+
+  test("subdomain migration preserves existing hostnames and related logs", () => {
+    const sqlite = new Database(resolveSqliteDbPath(dataDir));
+    const previous = readMigrationFiles({
+      migrationsFolder: path.join(import.meta.dir, "../../drizzle"),
+    }).slice(0, 8);
+    for (const migration of previous) {
+      for (const statement of migration.sql) sqlite.exec(statement);
+    }
+    sqlite.exec(`
+      CREATE TABLE __drizzle_migrations (id SERIAL PRIMARY KEY, hash TEXT NOT NULL, created_at NUMERIC);
+      INSERT INTO users VALUES ('user-1', 'google-1', 1);
+      INSERT INTO instances (id, ownerId, createdAt, isPublic, isLocked, raw)
+        VALUES ('abcd1234', 'user-1', 1, 1, 1, 'original response');
+      INSERT INTO logs (id, instanceId, type, timestamp, address, raw)
+        VALUES ('log-1', 'abcd1234', 'http', 2, '127.0.0.1', 'GET / HTTP/1.1');
+    `);
+    for (const migration of previous) {
+      sqlite
+        .query(
+          "INSERT INTO __drizzle_migrations (hash, created_at) VALUES (?1, ?2)",
+        )
+        .run(migration.hash, migration.folderMillis);
+    }
+    sqlite.close();
+    expect(initDb({ dataDir }).kind).toBe("ok");
+    expect(getInstanceById("abcd1234")).toMatchObject({
+      id: "abcd1234",
+      subdomain: "abcd1234",
+      raw: "original response",
+      public: true,
+      locked: true,
+    });
+    expect(getInstanceIdBySubdomain("abcd1234")).toBe("abcd1234");
+    expect(getDb().select().from(logs).all()).toHaveLength(1);
   });
 
   test("initDb reset recreates an empty migrated database", () => {

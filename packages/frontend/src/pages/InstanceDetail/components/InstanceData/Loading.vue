@@ -37,7 +37,7 @@ const formattedDate = computed(() => {
 const instanceHost = computed(() =>
   props.instance === undefined
     ? undefined
-    : config.getInstanceHost(props.instance.id),
+    : config.getInstanceHost(props.instance),
 );
 </script>
 

@@ -44,9 +44,7 @@ export const useInstanceDataLogic = (instance: Ref<Instance>) => {
   const { isGuest } = storeToRefs(authStore);
   const { ids: guestInstanceIds } = storeToRefs(guestInstancesStore);
 
-  const instanceHost = computed(() =>
-    config.getInstanceHost(instance.value.id),
-  );
+  const instanceHost = computed(() => config.getInstanceHost(instance.value));
   const isLocked = computed(() => instance.value.locked);
   const isPublic = computed(() => instance.value.public);
   const canManageInstance = computed(() => {

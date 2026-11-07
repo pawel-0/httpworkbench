@@ -18,6 +18,8 @@ export type User = z.infer<typeof UserSchema>;
 
 export const InstanceSchema = z.object({
   id: z.string(),
+  // Optional on input for compatibility; persisted instances include this field.
+  subdomain: z.string().optional(),
   ownerId: z.string(),
   createdAt: z.number(),
   expiresAt: z.number().optional(),

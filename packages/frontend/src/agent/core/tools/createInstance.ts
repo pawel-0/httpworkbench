@@ -60,7 +60,7 @@ export const createInstanceTool = tool({
     try {
       const raw = buildRawPayload({ text, type });
       const instance = await createStaticInstance(raw);
-      const url = config.getInstanceUrl(instance.id);
+      const url = config.getInstanceUrl(instance);
 
       return {
         status: "created",

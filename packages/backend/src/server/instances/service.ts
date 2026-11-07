@@ -3,9 +3,11 @@ import {
   GUEST_INSTANCE_TTL_MS,
   GUEST_MAX_ACTIVE_INSTANCES,
   GUEST_OWNER_ID,
+  InstanceSubdomainSchema,
+  resolveDomain,
   type Instance,
 } from "shared";
-import { instancePolicies } from "../../config";
+import { dnsConfig, instancePolicies } from "../../config";
 import {
   addInstance,
   addGuestInstance,
@@ -13,6 +15,8 @@ import {
   getInstanceById,
   getWebhooksByOwner,
   updateInstance,
+  setInstanceSubdomain,
+  isInstanceIdentifierTaken,
 } from "../../storage";
 import { issueGuestManagementToken } from "../guestAccess";
 import { generateInstanceID, validateStaticRaw } from "../utils";
@@ -21,6 +25,8 @@ type InstanceServiceErrorCode =
   | "invalid_raw"
   | "invalid_webhooks"
   | "instance_limit"
+  | "invalid_subdomain"
+  | "subdomain_taken"
   | "not_found"
   | "forbidden";
 
@@ -79,6 +85,52 @@ const validateGuestRaw = (raw: string): InstanceServiceResult<string> => {
   return validateRaw(raw);
 };
 
+const generateAvailableInstanceId = () => {
+  let id = generateInstanceID();
+  while (isInstanceIdentifierTaken(id)) id = generateInstanceID();
+  return id;
+};
+
+export const changeInstanceSubdomain = (
+  instanceId: string,
+  ownerId: string,
+  value: string,
+): InstanceServiceResult<Instance> => {
+  const owned = getOwnedInstance(instanceId, ownerId);
+  if (!owned.ok) return owned;
+  if (ownerId === GUEST_OWNER_ID)
+    return fail("forbidden", "Guest hostnames cannot be changed", 403);
+  const parsed = InstanceSubdomainSchema.safeParse(value);
+  if (!parsed.success)
+    return fail(
+      "invalid_subdomain",
+      parsed.error.issues[0]?.message ?? "Invalid subdomain",
+      400,
+    );
+  const appHost = resolveDomain(Bun.env.DOMAIN);
+  if (appHost === `${parsed.data}.${dnsConfig.instancesDomain}`) {
+    return fail(
+      "invalid_subdomain",
+      "This subdomain is reserved for the dashboard",
+      400,
+    );
+  }
+  try {
+    const updated = setInstanceSubdomain(instanceId, parsed.data);
+    return updated === undefined
+      ? fail("not_found", "Not found", 404)
+      : { ok: true, value: updated };
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message.includes("UNIQUE constraint failed: instances.subdomain")
+    ) {
+      return fail("subdomain_taken", "This subdomain is already in use", 409);
+    }
+    throw error;
+  }
+};
+
 export const getOwnedInstance = (
   instanceId: string,
   ownerId: string,
@@ -129,7 +181,7 @@ export const createInstance = (
   return {
     ok: true,
     value: addInstance({
-      id: generateInstanceID(),
+      id: generateAvailableInstanceId(),
       ownerId: input.ownerId,
       createdAt: now,
       expiresAt,
@@ -196,7 +248,7 @@ export const createGuestInstance = async (
 
   const now = Date.now();
   const expiresAt = now + GUEST_INSTANCE_TTL_MS;
-  const instanceId = generateInstanceID();
+  const instanceId = generateAvailableInstanceId();
   const token = await issueGuestManagementToken(
     { id: instanceId, createdAt: now },
     expiresAt,

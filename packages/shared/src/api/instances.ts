@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { InstanceSubdomainSchema } from "../instanceSubdomain";
 import {
   GUEST_MANAGEMENT_TOKEN_PATTERN,
   GUEST_INSTANCE_RAW_LIMIT_BYTES,
@@ -99,6 +100,16 @@ export const RenameInstanceSchema = z
   .strict();
 
 export type RenameInstanceInput = z.infer<typeof RenameInstanceSchema>;
+
+export const SetInstanceSubdomainSchema = z
+  .object({
+    subdomain: InstanceSubdomainSchema,
+  })
+  .strict();
+
+export type SetInstanceSubdomainInput = z.infer<
+  typeof SetInstanceSubdomainSchema
+>;
 
 export const SetInstanceLockedSchema = z
   .object({

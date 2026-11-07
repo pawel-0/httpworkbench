@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Button from "primevue/button";
-import InputText from "primevue/inputtext";
+import InstanceHostname from "./InstanceHostname.vue";
 import Dialog from "primevue/dialog";
 import MultiSelect from "primevue/multiselect";
 import Tag from "primevue/tag";
@@ -27,7 +27,6 @@ const emit = defineEmits<{
 const { instance } = toRefs(props);
 
 const {
-  instanceHost,
   rawContent,
   isDirty,
   isUpdating,
@@ -216,36 +215,11 @@ const isWebhooksDialogVisible = ref(false);
         </span>
       </div>
 
-      <div class="flex flex-col gap-2">
-        <label
-          for="instance-host-input"
-          class="text-sm font-medium text-surface-700 dark:text-surface-300"
-        >
-          Hostname
-        </label>
-        <div class="flex gap-2">
-          <InputText
-            id="instance-host-input"
-            :value="instanceHost"
-            readonly
-            size="small"
-            aria-label="Interaction host"
-            class="min-w-0 w-full bg-surface-50 font-mono text-sm dark:bg-surface-800"
-          />
-          <Button
-            icon="pi pi-copy"
-            severity="secondary"
-            outlined
-            size="small"
-            aria-label="Copy interaction host"
-            @click="handleCopy"
-          />
-        </div>
-        <p class="text-xs text-surface-600 dark:text-surface-400">
-          Send HTTP, HTTPS, DNS, and SMTP requests to this host to see them
-          appear in the logs.
-        </p>
-      </div>
+      <InstanceHostname
+        :instance="instance"
+        :editable="canManageInstance && !isGuest"
+        @copy="handleCopy"
+      />
     </div>
 
     <div class="flex min-h-[260px] flex-1 flex-col gap-3 lg:min-h-0">

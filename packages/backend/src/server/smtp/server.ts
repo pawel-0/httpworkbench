@@ -30,7 +30,7 @@ const smtpLogRateLimit = createBoundedProtocolRateLimiter({
 });
 
 export type SmtpServerDependencies = {
-  hasActiveInstance: (id: string) => Promise<boolean>;
+  resolveInstanceId: (subdomain: string) => Promise<string | undefined>;
   addLog: (log: Log) => Log | AddLogOutcome | Promise<Log | AddLogOutcome>;
   broadcastLog: (log: Log) => void;
   createId: () => string;
@@ -267,16 +267,13 @@ export const createSmtpSession = ({
           return reply("550 5.1.1 No such instance");
         }
 
-        if (!(await deps.hasActiveInstance(resolution.instanceId))) {
+        const instanceId = await deps.resolveInstanceId(resolution.instanceId);
+        if (instanceId === undefined) {
           return reply("550 5.1.1 No such instance");
         }
 
-        if (
-          !recipients.some(
-            (entry) => entry.instanceId === resolution.instanceId,
-          )
-        ) {
-          recipients.push({ raw: to, instanceId: resolution.instanceId });
+        if (!recipients.some((entry) => entry.instanceId === instanceId)) {
+          recipients.push({ raw: to, instanceId });
         }
 
         return reply("250 2.1.5 OK");
