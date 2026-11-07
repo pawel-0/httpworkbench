@@ -5,6 +5,7 @@ import {
   UserNoticeSchema,
   WebhookSchema,
   type Instance,
+  type PathResponse,
   type InstanceModeration,
   type InstanceSummary,
   type UserNotice,
@@ -29,6 +30,7 @@ type WebhookRow = typeof webhooks.$inferSelect;
 export const toDomainInstance = (
   row: InstanceRow,
   webhookIds: string[],
+  pathResponses: PathResponse[] = [],
 ): Instance =>
   InstanceSchema.parse({
     id: row.id,
@@ -37,6 +39,7 @@ export const toDomainInstance = (
     expiresAt: row.expiresAt ?? undefined,
     label: row.label ?? undefined,
     webhookIds,
+    pathResponses,
     public: row.isPublic,
     locked: row.isLocked,
     raw: row.raw,

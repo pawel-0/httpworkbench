@@ -5,6 +5,7 @@ import Dialog from "primevue/dialog";
 import MultiSelect from "primevue/multiselect";
 import Tag from "primevue/tag";
 import { HttpEditor } from "@/components/HttpEditor";
+import PathResponses from "./PathResponses.vue";
 import { GUEST_OWNER_ID, type Instance } from "shared";
 import {
   ref,
@@ -252,10 +253,10 @@ const isWebhooksDialogVisible = ref(false);
       <div class="flex justify-between items-end">
         <div>
           <h3 class="font-semibold text-surface-900 dark:text-surface-0">
-            Raw Response
+            Default response
           </h3>
           <p class="text-xs text-surface-600 dark:text-surface-400 mt-1">
-            Customize the raw HTTP response returned by this instance.
+            Used when no path override matches the incoming request.
           </p>
         </div>
       </div>
@@ -313,6 +314,12 @@ const isWebhooksDialogVisible = ref(false);
         />
       </div>
     </div>
+
+    <PathResponses
+      :key="instance.id"
+      :instance="instance"
+      :editable="canManageInstance && !isGuest"
+    />
 
     <div
       v-if="canManageInstance || showExpirationNotice"

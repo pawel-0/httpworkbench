@@ -8,6 +8,7 @@ import {
   RenameInstanceSchema,
   SetInstanceLockedSchema,
   SetInstancePublicSchema,
+  SetPathResponsesSchema,
   UpdateInstanceSchema,
 } from "shared";
 import {
@@ -34,6 +35,7 @@ import {
   createInstance,
   getOwnedInstance,
   replaceInstance,
+  setInstancePathResponses,
   type InstanceServiceError,
 } from "../instances/service";
 import { clampLogLimit, decodeLogsCursor, encodeLogsCursor } from "../utils";
@@ -81,6 +83,7 @@ export const instancesRoutes = new Elysia({ name: "routes/instances" })
         ownerId: user.id,
         raw: body.raw,
         webhookIds: body.webhookIds,
+        pathResponses: body.pathResponses,
       });
       return result.ok
         ? status(201, result.value)
@@ -171,6 +174,7 @@ export const instancesRoutes = new Elysia({ name: "routes/instances" })
         ownerId: user.id,
         raw: body.raw,
         webhookIds: body.webhookIds,
+        pathResponses: body.pathResponses,
       });
       return result.ok ? result.value : serviceErrorResponse(result.error);
     },
@@ -346,6 +350,27 @@ export const instancesRoutes = new Elysia({ name: "routes/instances" })
         tags: ["Logs"],
         summary: "Clear instance logs",
         description: "Permanently remove all logs for an owned instance.",
+      },
+    },
+  )
+  .patch(
+    "/api/instances/:id/path-responses",
+    ({ params, body, user }) => {
+      const result = setInstancePathResponses(
+        params.id,
+        user.id,
+        body.pathResponses,
+      );
+      return result.ok ? result.value : serviceErrorResponse(result.error);
+    },
+    {
+      scope: "instances:write",
+      body: SetPathResponsesSchema,
+      detail: {
+        tags: ["Instances"],
+        summary: "Set path response overrides",
+        description:
+          "Replace exact path overrides. Query strings are ignored; unmatched paths use the default response. Pass an empty array to remove all overrides.",
       },
     },
   )

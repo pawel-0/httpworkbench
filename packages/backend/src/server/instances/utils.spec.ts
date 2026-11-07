@@ -1,10 +1,37 @@
 import { describe, expect, test } from "bun:test";
 import {
+  getRequestPath,
   adjustContentLength,
   getHeaderValue,
   parseInstanceIdFromHost,
   stripInternalHeaders,
 } from "./utils";
+
+describe("getRequestPath", () => {
+  test("ignores query strings without normalizing path bytes", () => {
+    for (const path of ["/", "/Callback/", "/a%2Fb", "/a/../b", "//double"]) {
+      expect(
+        getRequestPath(
+          `GET ${path}?q=/other HTTP/1.1\r\nHost: example.com\r\n\r\n`,
+        ),
+      ).toBe(path);
+    }
+    expect(getRequestPath("POST /callback HTTP/1.0\r\n\r\n")).toBe("/callback");
+  });
+  test("supports absolute-form requests and falls back for non-path targets", () => {
+    expect(
+      getRequestPath("GET http://example.com/a/../b?x=1 HTTP/1.1\r\n\r\n"),
+    ).toBe("/a/../b");
+    expect(getRequestPath("GET https://example.com?x=1 HTTP/1.1\r\n\r\n")).toBe(
+      "/",
+    );
+    expect(getRequestPath("OPTIONS * HTTP/1.1\r\n\r\n")).toBeUndefined();
+    expect(
+      getRequestPath("CONNECT example.com:443 HTTP/1.1\r\n\r\n"),
+    ).toBeUndefined();
+    expect(getRequestPath("malformed request")).toBeUndefined();
+  });
+});
 
 describe("parseInstanceIdFromHost", () => {
   test("extracts the instance id from an instances subdomain host", () => {

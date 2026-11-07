@@ -24,6 +24,8 @@ export const apiPaths = {
     `${path("/api/instances/:id/logs/recent", { id })}${query}`,
   instancePublic: (id: string) => path("/api/instances/:id/public", { id }),
   instanceRename: (id: string) => path("/api/instances/:id/rename", { id }),
+  instancePathResponses: (id: string) =>
+    path("/api/instances/:id/path-responses", { id }),
   instanceStream: (id: string) => path("/api/instances/:id/stream", { id }),
   instances: "/api/instances",
   userNotices: "/api/user/notices",

@@ -1,5 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/server";
 import * as z from "zod/v4";
+import { PathResponsesSchema } from "shared";
 import {
   deleteInstance,
   getInstanceSummariesByOwner,
@@ -57,6 +58,7 @@ export const registerInstanceTools = (server: McpServer) => {
             "Complete raw HTTP response to serve, including status line, headers, blank line, and body.",
           ),
         label: z.string().max(100).optional(),
+        pathResponses: PathResponsesSchema.optional(),
         ttlDays: z
           .union([z.literal(3), z.literal(14)])
           .default(3)
@@ -71,13 +73,14 @@ export const registerInstanceTools = (server: McpServer) => {
         openWorldHint: true,
       },
     },
-    async ({ raw, label, ttlDays }, extra) => {
+    async ({ raw, label, ttlDays, pathResponses }, extra) => {
       const auth = getAuthContext(extra);
       requireScope(auth, "instances:write");
       const result = createInstance({
         ownerId: auth.user.id,
         raw,
         label,
+        pathResponses,
         ttlMs: ttlDays * 24 * 60 * 60 * 1000,
       });
       return result.ok
@@ -119,6 +122,7 @@ export const registerInstanceTools = (server: McpServer) => {
       inputSchema: z.object({
         instanceId: z.string().min(1),
         raw: z.string(),
+        pathResponses: PathResponsesSchema.optional(),
       }),
       annotations: {
         readOnlyHint: false,
@@ -127,13 +131,14 @@ export const registerInstanceTools = (server: McpServer) => {
         openWorldHint: true,
       },
     },
-    async ({ instanceId, raw }, extra) => {
+    async ({ instanceId, raw, pathResponses }, extra) => {
       const auth = getAuthContext(extra);
       requireScope(auth, "instances:write");
       const result = replaceInstance({
         instanceId,
         ownerId: auth.user.id,
         raw,
+        pathResponses,
       });
       return result.ok
         ? jsonToolResult({ instance: serializeInstance(result.value) })

@@ -7,6 +7,16 @@ const requestLineBreakPattern = /\r?\n/;
 const responseLineBreakPattern = /\r?\n/;
 const responseHeaderSeparatorPattern = /\r?\n\r?\n/;
 
+export const getRequestPath = (rawRequest: string): string | undefined => {
+  const line = rawRequest.split(requestLineBreakPattern, 1)[0] ?? "";
+  const target = /^\S+[ \t]+(\S+)[ \t]+HTTP\/\d+(?:\.\d+)?$/.exec(line)?.[1];
+  if (target === undefined) return undefined;
+  if (target.startsWith("/")) return target.split("?", 1)[0];
+  // Absolute-form requests preserve escaped characters and dot segments too.
+  const absolute = /^https?:\/\/[^/?#]+(\/[^?#]*)?(?:\?[^#]*)?$/i.exec(target);
+  return absolute === null ? undefined : (absolute[1] ?? "/");
+};
+
 export const createResponse = (status: string, message: string) => {
   return encoder.encode(
     `HTTP/1.1 ${status}\r\nContent-Type: text/plain\r\n\r\n${message}`,

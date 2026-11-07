@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { PathResponsesSchema } from "./pathResponses";
 
 export const UserRecordSchema = z.object({
   id: z.string(),
@@ -26,6 +27,7 @@ export const InstanceSchema = z.object({
   public: z.boolean().optional().default(false),
   locked: z.boolean().optional().default(false),
   raw: z.string(),
+  pathResponses: PathResponsesSchema.optional(),
 });
 
 export type Instance = z.infer<typeof InstanceSchema>;
@@ -33,6 +35,7 @@ export type Instance = z.infer<typeof InstanceSchema>;
 export const InstanceSummarySchema = InstanceSchema.omit({
   raw: true,
   webhookIds: true,
+  pathResponses: true,
 }).extend({
   logCount: z.number().int().nonnegative(),
 });

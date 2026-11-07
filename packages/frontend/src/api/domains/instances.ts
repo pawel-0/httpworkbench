@@ -7,6 +7,7 @@ import type {
   RenameInstanceInput,
   SetInstanceLockedInput,
   SetInstancePublicInput,
+  SetPathResponsesInput,
   UpdateInstanceInput,
 } from "shared";
 import {
@@ -18,6 +19,7 @@ import {
   RenameInstanceSchema,
   SetInstanceLockedSchema,
   SetInstancePublicSchema,
+  SetPathResponsesSchema,
   UpdateInstanceSchema,
 } from "shared";
 import { apiClient } from "../client";
@@ -30,6 +32,16 @@ const recentLogsQuery = (cursor: string) => {
 };
 
 export const instancesApi = {
+  setPathResponses: async (
+    id: string,
+    input: SetPathResponsesInput,
+  ): Promise<Instance> => {
+    const data = await apiClient.patch<unknown>(
+      apiPaths.instancePathResponses(id),
+      SetPathResponsesSchema.parse(input),
+    );
+    return parseResponse(InstanceSchema, data, "set path responses");
+  },
   getAll: async (): Promise<InstanceSummary[]> => {
     const data = await apiClient.get<unknown>(apiPaths.instances);
     return parseResponse(InstancesResponseSchema, data, "instances");

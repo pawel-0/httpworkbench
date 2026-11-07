@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { PathResponsesSchema } from "../pathResponses";
 import {
   GUEST_MANAGEMENT_TOKEN_PATTERN,
   GUEST_INSTANCE_RAW_LIMIT_BYTES,
@@ -10,6 +11,7 @@ import { InstanceSchema, InstanceSummarySchema, LogSchema } from "../schemas";
 export const CreateInstanceSchema = z
   .object({
     raw: z.string().max(INSTANCE_RAW_LIMIT_BYTES),
+    pathResponses: PathResponsesSchema.optional(),
     webhookIds: z.array(z.string().min(1).max(100)).max(100).optional(),
   })
   .strict();
@@ -19,6 +21,7 @@ export type CreateInstanceInput = z.infer<typeof CreateInstanceSchema>;
 export const UpdateInstanceSchema = z
   .object({
     raw: z.string().max(INSTANCE_RAW_LIMIT_BYTES),
+    pathResponses: PathResponsesSchema.optional(),
     webhookIds: z.array(z.string().min(1).max(100)).max(100).optional(),
   })
   .strict();

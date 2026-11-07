@@ -1,4 +1,9 @@
-import { GUEST_OWNER_ID, type Instance, type InstanceSummary } from "shared";
+import {
+  GUEST_OWNER_ID,
+  type Instance,
+  type InstanceSummary,
+  type PathResponse,
+} from "shared";
 import { InstanceSchema } from "shared";
 import {
   and,
@@ -11,6 +16,7 @@ import {
   isNull,
   lte,
   or,
+  sql,
 } from "drizzle-orm";
 import { getDb } from "../db";
 import {
@@ -18,7 +24,12 @@ import {
   toDomainInstanceSummary,
   toInstanceRow,
 } from "../records";
-import { instances, instanceWebhooks, logs } from "../schema";
+import {
+  instances,
+  instanceWebhooks,
+  instancePathResponses,
+  logs,
+} from "../schema";
 
 const activeInstanceCondition = (now: number) =>
   or(isNull(instances.expiresAt), gt(instances.expiresAt, now));
@@ -36,7 +47,38 @@ const getActiveInstanceById = (
     .get();
   return row === undefined
     ? undefined
-    : toDomainInstance(row, getWebhookIdsForInstance(id));
+    : toDomainInstance(
+        row,
+        getWebhookIdsForInstance(id),
+        getPathResponsesForInstance(id),
+      );
+};
+
+const getPathResponsesForInstance = (id: string): PathResponse[] =>
+  getDb()
+    .select({
+      path: instancePathResponses.path,
+      raw: instancePathResponses.raw,
+    })
+    .from(instancePathResponses)
+    .where(eq(instancePathResponses.instanceId, id))
+    .orderBy(asc(instancePathResponses.path))
+    .all();
+
+const replacePathResponses = (
+  database: WebhookMutationStore,
+  instanceId: string,
+  responses: PathResponse[],
+) => {
+  database
+    .delete(instancePathResponses)
+    .where(eq(instancePathResponses.instanceId, instanceId))
+    .run();
+  if (responses.length > 0)
+    database
+      .insert(instancePathResponses)
+      .values(responses.map((response) => ({ instanceId, ...response })))
+      .run();
 };
 
 const replaceInstanceWebhooks = (
@@ -57,11 +99,15 @@ const replaceInstanceWebhooks = (
 };
 
 export function addInstance(instance: Instance): Instance {
-  const parsed = InstanceSchema.parse(instance);
+  const parsed = InstanceSchema.parse({
+    ...instance,
+    pathResponses: instance.pathResponses ?? [],
+  });
   getDb().transaction(
     (tx) => {
       tx.insert(instances).values(toInstanceRow(parsed)).run();
       replaceInstanceWebhooks(tx, parsed.id, parsed.webhookIds);
+      replacePathResponses(tx, parsed.id, parsed.pathResponses ?? []);
     },
     { behavior: "immediate" },
   );
@@ -69,7 +115,7 @@ export function addInstance(instance: Instance): Instance {
 }
 
 export function addGuestInstance(instance: Instance): Instance {
-  const parsed = InstanceSchema.parse(instance);
+  const parsed = InstanceSchema.parse({ ...instance, pathResponses: [] });
   if (parsed.ownerId !== GUEST_OWNER_ID || parsed.webhookIds.length !== 0) {
     throw new Error("Invalid guest instance");
   }
@@ -165,7 +211,9 @@ export function getInstanceById(id: string): Instance | undefined {
   return getActiveInstanceById(id, Date.now());
 }
 
-export type ServableInstance = Pick<Instance, "id" | "raw">;
+export type ServableInstance = Pick<Instance, "id" | "raw"> & {
+  responsePath?: string | null;
+};
 
 export type InstanceAccessMetadata = Pick<
   Instance,
@@ -174,7 +222,26 @@ export type InstanceAccessMetadata = Pick<
 
 export function getServableInstanceById(
   id: string,
+  path?: string,
 ): ServableInstance | undefined {
+  if (path !== undefined) {
+    return getDb()
+      .select({
+        id: instances.id,
+        raw: sql<string>`coalesce(${instancePathResponses.raw}, ${instances.raw})`,
+        responsePath: instancePathResponses.path,
+      })
+      .from(instances)
+      .leftJoin(
+        instancePathResponses,
+        and(
+          eq(instancePathResponses.instanceId, instances.id),
+          eq(instancePathResponses.path, path),
+        ),
+      )
+      .where(and(eq(instances.id, id), activeInstanceCondition(Date.now())))
+      .get();
+  }
   return getDb()
     .select({ id: instances.id, raw: instances.raw })
     .from(instances)
@@ -254,6 +321,7 @@ export function updateInstance(
         .where(eq(instances.id, id))
         .run();
       replaceInstanceWebhooks(tx, id, parsed.webhookIds);
+      replacePathResponses(tx, id, parsed.pathResponses ?? []);
     },
     { behavior: "immediate" },
   );

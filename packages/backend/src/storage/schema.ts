@@ -51,6 +51,18 @@ export const instances = sqliteTable(
   ],
 );
 
+export const instancePathResponses = sqliteTable(
+  "instancePathResponses",
+  {
+    instanceId: text("instanceId")
+      .notNull()
+      .references(() => instances.id, { onDelete: "cascade" }),
+    path: text("path").notNull(),
+    raw: text("raw").notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.instanceId, table.path] })],
+);
+
 export const webhooks = sqliteTable(
   "webhooks",
   {
@@ -178,6 +190,7 @@ export const userNotices = sqliteTable(
 );
 
 export const schema = {
+  instancePathResponses,
   users,
   localCredentials,
   instances,

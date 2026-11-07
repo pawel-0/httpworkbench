@@ -6,7 +6,7 @@ import { Database } from "bun:sqlite";
 import { readMigrationFiles } from "drizzle-orm/migrator";
 import type { Instance, Log, UserRecord, Webhook } from "shared";
 import { closeDb, getDb, initDb, resolveSqliteDbPath } from "./db";
-import { addInstance } from "./repositories/instances";
+import { addInstance, getInstanceById } from "./repositories/instances";
 import { addUser } from "./repositories/users";
 import { addWebhook } from "./repositories/webhooks";
 import { logs } from "./schema";
@@ -85,6 +85,7 @@ describe("storage db migrations", () => {
       { name: "__drizzle_migrations" },
       { name: "apiKeys" },
       { name: "instanceModerations" },
+      { name: "instancePathResponses" },
       { name: "instanceWebhooks" },
       { name: "instances" },
       { name: "localCredentials" },
@@ -157,6 +158,10 @@ describe("storage db migrations", () => {
     expect(result.kind === "ok" && result.stats).toMatchObject({
       usersLength: 1,
       instancesLength: 1,
+    });
+    expect(getInstanceById("inst-1")).toMatchObject({
+      raw: "ok",
+      pathResponses: [],
     });
   });
 

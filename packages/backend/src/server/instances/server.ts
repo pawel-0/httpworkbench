@@ -1,7 +1,10 @@
 import { listen, type Socket } from "bun";
 import { type Log } from "shared";
 import { addLogWithOutcome } from "../../storage";
-import { getServableInstanceById } from "../../storage/repositories/instances";
+import {
+  getServableInstanceById,
+  type ServableInstance,
+} from "../../storage/repositories/instances";
 import { broadcastLog } from "./logStream";
 import { HttpRequestBuffer } from "./httpBuffer";
 import {
@@ -9,6 +12,7 @@ import {
   createResponse,
   getHeaderValue,
   getInstanceIDFromHost,
+  getRequestPath,
   respond,
   stripInternalHeaders,
 } from "./utils";
@@ -35,21 +39,23 @@ export const resetInstanceResponseCacheForTests = () => {
   cachedResponseBytes = 0;
 };
 
-const encodeInstanceResponse = (instance: { id: string; raw: string }) => {
-  const cached = responseCache.get(instance.id);
+const encodeInstanceResponse = (instance: ServableInstance) => {
+  const cacheKey = JSON.stringify([instance.id, instance.responsePath ?? null]);
+  const cached = responseCache.get(cacheKey);
   if (cached?.raw === instance.raw) {
-    responseCache.delete(instance.id);
-    responseCache.set(instance.id, cached);
+    responseCache.delete(cacheKey);
+    responseCache.set(cacheKey, cached);
     return cached.encoded;
   }
 
   if (cached !== undefined) {
-    responseCache.delete(instance.id);
+    responseCache.delete(cacheKey);
     cachedResponseBytes -= cached.size;
   }
 
   const encoded = responseEncoder.encode(adjustContentLength(instance.raw));
-  const size = encoded.byteLength + instance.raw.length * 2;
+  const size =
+    encoded.byteLength + instance.raw.length * 2 + cacheKey.length * 2;
   if (size > maxCachedResponseBytes) {
     return encoded;
   }
@@ -64,7 +70,7 @@ const encodeInstanceResponse = (instance: { id: string; raw: string }) => {
     cachedResponseBytes -= oldest?.size ?? 0;
   }
 
-  responseCache.set(instance.id, { raw: instance.raw, encoded, size });
+  responseCache.set(cacheKey, { raw: instance.raw, encoded, size });
   cachedResponseBytes += size;
   return encoded;
 };
@@ -177,7 +183,8 @@ export const createInstancesServer = (
             return;
           }
 
-          const instance = getServableInstanceById(result.instanceId);
+          const path = getRequestPath(rawRequest);
+          const instance = getServableInstanceById(result.instanceId, path);
           if (!instance) {
             respond(
               socket,

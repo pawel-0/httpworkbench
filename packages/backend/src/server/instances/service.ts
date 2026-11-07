@@ -3,6 +3,8 @@ import {
   GUEST_INSTANCE_TTL_MS,
   GUEST_MAX_ACTIVE_INSTANCES,
   GUEST_OWNER_ID,
+  PathResponsesSchema,
+  type PathResponse,
   type Instance,
 } from "shared";
 import { instancePolicies } from "../../config";
@@ -20,6 +22,7 @@ import { generateInstanceID, validateStaticRaw } from "../utils";
 type InstanceServiceErrorCode =
   | "invalid_raw"
   | "invalid_webhooks"
+  | "invalid_paths"
   | "instance_limit"
   | "not_found"
   | "forbidden";
@@ -72,6 +75,39 @@ const validateRaw = (raw: string): InstanceServiceResult<string> => {
 
 const rawEncoder = new TextEncoder();
 
+const validatePathResponses = (
+  raw: string,
+  responses: PathResponse[],
+): InstanceServiceResult<PathResponse[]> => {
+  const parsed = PathResponsesSchema.safeParse(responses);
+  if (!parsed.success)
+    return fail(
+      "invalid_paths",
+      parsed.error.issues[0]?.message ?? "Invalid path responses",
+      400,
+    );
+  let totalBytes = rawEncoder.encode(raw).length;
+  const normalized: PathResponse[] = [];
+  for (const response of parsed.data) {
+    const validated = validateRaw(response.raw);
+    if (!validated.ok)
+      return fail(
+        "invalid_raw",
+        `${response.path}: ${validated.error.message}`,
+        validated.error.status,
+      );
+    totalBytes += rawEncoder.encode(validated.value).length;
+    normalized.push({ path: response.path, raw: validated.value });
+  }
+  if (totalBytes > instancePolicies.rawLimitBytes)
+    return fail(
+      "invalid_raw",
+      "Default and path responses together exceed the instance response size limit",
+      413,
+    );
+  return { ok: true, value: normalized };
+};
+
 const validateGuestRaw = (raw: string): InstanceServiceResult<string> => {
   if (rawEncoder.encode(raw).length > GUEST_INSTANCE_RAW_LIMIT_BYTES) {
     return fail("invalid_raw", "Guest response exceeds 1MB limit", 413);
@@ -97,6 +133,7 @@ type CreateInstanceInput = {
   ownerId: string;
   raw: string;
   webhookIds?: string[];
+  pathResponses?: PathResponse[];
   label?: string;
   ttlMs?: number;
 };
@@ -113,6 +150,12 @@ export const createInstance = (
   if (!webhookIds.ok) {
     return webhookIds;
   }
+
+  const pathResponses = validatePathResponses(
+    raw.value,
+    input.pathResponses ?? [],
+  );
+  if (!pathResponses.ok) return pathResponses;
 
   if (
     instancePolicies.maxInstancesPerOwner !== undefined &&
@@ -134,6 +177,7 @@ export const createInstance = (
       createdAt: now,
       expiresAt,
       webhookIds: webhookIds.value,
+      pathResponses: pathResponses.value,
       label: input.label,
       public: false,
       locked: false,
@@ -147,6 +191,7 @@ type UpdateInstanceInput = {
   ownerId: string;
   raw: string;
   webhookIds?: string[];
+  pathResponses?: PathResponse[];
 };
 
 export const replaceInstance = (
@@ -170,12 +215,39 @@ export const replaceInstance = (
     return webhookIds;
   }
 
+  const pathResponses = validatePathResponses(
+    raw.value,
+    input.pathResponses ?? owned.value.pathResponses ?? [],
+  );
+  if (!pathResponses.ok) return pathResponses;
+
   const updated = updateInstance(input.instanceId, (instance) => ({
     ...instance,
     raw: raw.value,
     webhookIds: webhookIds.value,
+    pathResponses: pathResponses.value,
   }));
 
+  return updated === undefined
+    ? fail("not_found", "Not found", 404)
+    : { ok: true, value: updated };
+};
+
+export const setInstancePathResponses = (
+  instanceId: string,
+  ownerId: string,
+  responses: PathResponse[],
+): InstanceServiceResult<Instance> => {
+  const owned = getOwnedInstance(instanceId, ownerId);
+  if (!owned.ok) return owned;
+  if (ownerId === GUEST_OWNER_ID)
+    return fail("forbidden", "Path overrides require a signed-in account", 403);
+  const validated = validatePathResponses(owned.value.raw, responses);
+  if (!validated.ok) return validated;
+  const updated = updateInstance(instanceId, (instance) => ({
+    ...instance,
+    pathResponses: validated.value,
+  }));
   return updated === undefined
     ? fail("not_found", "Not found", 404)
     : { ok: true, value: updated };

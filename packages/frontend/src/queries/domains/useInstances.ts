@@ -6,6 +6,7 @@ import type {
   Instance,
   InstanceDetailResponse,
   InstanceSummary,
+  PathResponse,
   RenameInstanceInput,
   SetInstanceLockedInput,
   SetInstancePublicInput,
@@ -168,6 +169,7 @@ export const useCloneInstance = () => {
       const input: CreateInstanceInput = {
         raw: instance.raw,
         webhookIds: isGuest.value ? undefined : instance.webhookIds,
+        ...(isGuest.value ? {} : { pathResponses: instance.pathResponses }),
       };
 
       if (isGuest.value) {
@@ -346,6 +348,27 @@ export const useRenameInstance = () => {
     },
     onSuccess: async (data) => {
       await invalidateInstanceQueries(queryClient, data.id);
+    },
+  });
+};
+
+export const useSetPathResponses = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      pathResponses,
+    }: {
+      id: string;
+      pathResponses: PathResponse[];
+    }) => instancesApi.setPathResponses(id, { pathResponses }),
+    onSuccess: async (instance) => {
+      queryClient.setQueryData<InstanceDetailResponse>(
+        queryKeys.instances.detail(instance.id),
+        (current) =>
+          current === undefined ? undefined : { ...current, instance },
+      );
+      await invalidateInstanceQueries(queryClient, instance.id);
     },
   });
 };
