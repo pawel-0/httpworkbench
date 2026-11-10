@@ -3,13 +3,17 @@ import type { Log } from "shared";
 import { computed, toRefs } from "vue";
 import { useTimeAgo } from "@vueuse/core";
 import dayjs from "dayjs";
+import { getLogSummary } from "./getLogSummary";
 import { HTTPLog } from "./components/HTTPLog";
 import { DNSLog } from "./components/DNSLog";
 import { SMTPLog, useSmtpLogDisplay } from "./components/SMTPLog";
 
 const props = defineProps<{
   log: Log;
+  collapsed?: boolean;
 }>();
+const emit = defineEmits<{ toggle: [] }>();
+const summary = computed(() => getLogSummary(props.log));
 
 const { log } = toRefs(props);
 const {
@@ -73,56 +77,76 @@ const handleMouseLeave = (event: MouseEvent) => {
     @mouseleave="handleMouseLeave"
   >
     <div
-      class="flex items-center justify-between gap-2 border-b border-surface-200 bg-surface-50 px-3 py-2 text-xs text-surface-700 dark:border-surface-700 dark:bg-surface-900/50 dark:text-surface-400 sm:px-4 sm:py-3"
+      class="flex items-center gap-2 bg-surface-50 text-xs text-surface-700 dark:bg-surface-900/50 dark:text-surface-400"
+      :class="{
+        'border-b border-surface-200 dark:border-surface-700': !collapsed,
+      }"
     >
-      <div class="flex min-w-0 flex-1 items-center gap-2">
-        <span
-          class="shrink-0 rounded border px-1.5 py-0.5 font-semibold leading-none"
-          :class="badgeClass"
-        >
-          {{ log.type.toUpperCase() }}
+      <button
+        type="button"
+        class="flex min-w-0 flex-1 cursor-pointer flex-wrap items-center gap-x-2 gap-y-1 px-3 py-2 text-left hover:bg-surface-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary dark:hover:bg-surface-800 sm:px-4 sm:py-3"
+        :aria-expanded="!collapsed"
+        :aria-controls="`log-body-${log.id}`"
+        @click="emit('toggle')"
+      >
+        <span class="flex min-w-0 flex-[1_1_15rem] items-center gap-2">
+          <i
+            :class="collapsed ? 'pi pi-chevron-right' : 'pi pi-chevron-down'"
+            class="shrink-0 text-[10px]"
+            aria-hidden="true"
+          />
+          <span
+            class="shrink-0 rounded border px-1.5 py-0.5 font-semibold leading-none"
+            :class="badgeClass"
+          >
+            {{ log.type.toUpperCase() }}
+          </span>
+          <span
+            class="min-w-0 truncate font-mono text-surface-800 dark:text-surface-200"
+            :title="summary"
+            >{{ summary }}</span
+          >
         </span>
         <span
-          class="min-w-0 truncate font-mono text-surface-800 dark:text-surface-300"
-          >{{ log.address }}</span
+          class="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-x-2 gap-y-1"
         >
-      </div>
-      <div
-        class="flex min-w-0 shrink-0 items-center gap-1.5 whitespace-nowrap text-right"
-      >
-        <span>{{ formattedTimestamp }}</span>
-        <span class="text-surface-500 dark:text-surface-500">•</span>
-        <span
-          class="hidden text-surface-600 dark:text-surface-500 min-[420px]:inline"
-          :title="absoluteTimestamp"
-          >{{ absoluteTimestamp }}</span
-        >
-        <template v-if="log.type === 'smtp'">
-          <span class="text-surface-500 dark:text-surface-500">•</span>
-          <button
-            type="button"
-            class="inline-flex h-6 cursor-pointer items-center gap-1 rounded-md border border-surface-300 bg-white px-2 text-[11px] font-semibold capitalize leading-none text-surface-700 shadow-sm transition-colors hover:border-surface-400 hover:bg-surface-100 hover:text-surface-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 dark:border-surface-700 dark:bg-surface-800 dark:text-surface-200 dark:hover:border-surface-500 dark:hover:bg-surface-700 dark:hover:text-surface-0"
-            :aria-label="smtpDisplayModeTitle"
-            :title="smtpDisplayModeTitle"
-            @click.stop="toggleSmtpDisplayMode"
+          <span class="min-w-0 truncate font-mono" :title="log.address">{{
+            log.address
+          }}</span>
+          <span class="whitespace-nowrap" :title="absoluteTimestamp">{{
+            formattedTimestamp
+          }}</span>
+          <span
+            class="hidden whitespace-nowrap text-surface-600 dark:text-surface-500 min-[420px]:inline"
+            >• {{ absoluteTimestamp }}</span
           >
-            <i
-              :class="smtpDisplayModeIcon"
-              class="text-[10px]"
-              aria-hidden="true"
-            />
-            {{ smtpDisplayModeLabel }}
-          </button>
-        </template>
-      </div>
+        </span>
+      </button>
+      <button
+        v-if="log.type === 'smtp' && !collapsed"
+        type="button"
+        class="mr-3 inline-flex h-6 shrink-0 cursor-pointer items-center gap-1 rounded-md border border-surface-300 bg-white px-2 text-[11px] font-semibold capitalize leading-none text-surface-700 shadow-sm hover:bg-surface-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary dark:border-surface-700 dark:bg-surface-800 dark:text-surface-200 dark:hover:bg-surface-700"
+        :aria-label="smtpDisplayModeTitle"
+        :title="smtpDisplayModeTitle"
+        @click="toggleSmtpDisplayMode"
+      >
+        <i
+          :class="smtpDisplayModeIcon"
+          class="text-[10px]"
+          aria-hidden="true"
+        />
+        {{ smtpDisplayModeLabel }}
+      </button>
     </div>
-    <div class="p-0">
-      <HTTPLog v-if="log.type === 'http'" :log="log" />
-      <DNSLog v-else-if="log.type === 'dns'" :log="log" />
-      <SMTPLog v-else-if="log.type === 'smtp'" :raw="smtpDisplayedRaw" />
-      <div v-else class="p-4 text-surface-700 dark:text-surface-400">
-        Unknown log type
-      </div>
+    <div :id="`log-body-${log.id}`" :hidden="collapsed" class="p-0">
+      <template v-if="!collapsed">
+        <HTTPLog v-if="log.type === 'http'" :log="log" />
+        <DNSLog v-else-if="log.type === 'dns'" :log="log" />
+        <SMTPLog v-else-if="log.type === 'smtp'" :raw="smtpDisplayedRaw" />
+        <div v-else class="p-4 text-surface-700 dark:text-surface-400">
+          Unknown log type
+        </div>
+      </template>
     </div>
   </div>
 </template>
