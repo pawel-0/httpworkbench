@@ -323,7 +323,7 @@ const isWebhooksDialogVisible = ref(false);
 
     <div
       v-if="canManageInstance || showExpirationNotice"
-      class="mt-auto flex flex-col gap-3"
+      class="@container mt-auto flex flex-col gap-3"
     >
       <div
         v-if="showExpirationNotice"
@@ -361,7 +361,7 @@ const isWebhooksDialogVisible = ref(false);
 
       <div
         v-if="canManageInstance"
-        class="instance-actions flex flex-wrap gap-2"
+        class="instance-actions grid grid-cols-2 gap-2 @min-[25rem]:grid-cols-3 @min-[50rem]:grid-cols-6"
       >
         <Button
           label="Clone"
@@ -470,9 +470,8 @@ const isWebhooksDialogVisible = ref(false);
 </template>
 
 <style scoped>
-.instance-actions :deep(.p-button) {
-  flex: 1 0 max-content;
-  min-width: max-content;
+.instance-actions :deep(.p-button-label) {
+  white-space: normal;
 }
 
 :deep(.p-button) {

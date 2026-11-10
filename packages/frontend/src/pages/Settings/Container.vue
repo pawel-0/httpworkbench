@@ -16,6 +16,9 @@ const WebhookList = defineAsyncComponent(() =>
 const WebhookForm = defineAsyncComponent(() =>
   import("./WebhookForm").then((module) => module.WebhookForm),
 );
+const General = defineAsyncComponent(() =>
+  import("./General").then((module) => module.General),
+);
 const Ai = defineAsyncComponent(() =>
   import("./Ai").then((module) => module.Ai),
 );
@@ -37,6 +40,7 @@ const showEditDialog = ref(false);
 const editingWebhook = ref<Webhook | undefined>(undefined);
 const showDesktopDivider = useMediaQuery("(min-width: 640px)");
 const sections = [
+  { id: "general", label: "General", icon: "pi pi-cog" },
   { id: "ai", label: "AI", icon: "pi pi-sparkles" },
   { id: "api-keys", label: "API Keys", icon: "pi pi-key" },
   { id: "mcp", label: "MCP", icon: "pi pi-bolt" },
@@ -44,7 +48,7 @@ const sections = [
   { id: "version", label: "Version", icon: "pi pi-refresh" },
 ] as const;
 type SettingsSectionId = (typeof sections)[number]["id"];
-const activeSection = ref<SettingsSectionId>("ai");
+const activeSection = ref<SettingsSectionId>("general");
 const {
   data: webhooks,
   isLoading,
@@ -148,8 +152,8 @@ useEventListener(window, "keydown", (event) => {
           <p
             class="max-w-3xl text-sm text-surface-600 dark:text-surface-300 sm:text-base"
           >
-            Manage AI providers, API keys, MCP clients, webhooks, and version
-            checks.
+            Manage general preferences, AI providers, API keys, MCP clients,
+            webhooks, and version checks.
           </p>
         </div>
         <Button
@@ -193,7 +197,11 @@ useEventListener(window, "keydown", (event) => {
       </aside>
 
       <main class="settings-content min-w-0 max-w-full py-1 sm:py-2">
-        <section v-if="activeSection === 'version'">
+        <section v-if="activeSection === 'general'">
+          <General />
+        </section>
+
+        <section v-else-if="activeSection === 'version'">
           <UpdateCheck />
         </section>
 

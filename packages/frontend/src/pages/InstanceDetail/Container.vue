@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { useVirtualizer } from "@tanstack/vue-virtual";
+import { useInstanceDetailPreferencesStore } from "@/stores/instanceDetailPreferences";
 import Button from "primevue/button";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { useInstanceDetailLogic } from "./useLogic";
 import { useLogsPanelControls } from "./useLogsPanelControls";
@@ -34,10 +35,28 @@ const {
   getFilterButtonClass,
 } = useLogsPanelControls(logs, setSidePanelHidden);
 
+// Keep state outside virtualized cards so scrolling and filtering preserve it.
+const preferences = useInstanceDetailPreferencesStore();
+const logCollapseOverrides = ref(new Map<string, boolean>());
+const isLogCollapsed = (id: string) =>
+  logCollapseOverrides.value.get(id) ?? preferences.autoCollapseLogs;
+const toggleLog = (id: string) => {
+  logCollapseOverrides.value.set(id, !isLogCollapsed(id));
+};
+watch(instanceId, () => logCollapseOverrides.value.clear());
+watch(logs, (currentLogs) => {
+  const ids = new Set(currentLogs.map((log) => log.id));
+  for (const id of logCollapseOverrides.value.keys()) {
+    if (!ids.has(id)) logCollapseOverrides.value.delete(id);
+  }
+});
+
 const scrollerRef = ref<HTMLElement | null>(null);
 
 const estimateLogSize = (index: number) => {
-  switch (filteredLogs.value[index]?.type) {
+  const log = filteredLogs.value[index];
+  if (isLogCollapsed(log.id)) return 64;
+  switch (log?.type) {
     case "dns":
       return 220;
     case "smtp":
@@ -300,7 +319,11 @@ const exitLogOnEscape = (event: KeyboardEvent) => {
                 class="absolute left-0 top-0 w-full pb-4"
                 :style="{ transform: `translateY(${virtualRow.start}px)` }"
               >
-                <InstanceLog :log="filteredLogs[virtualRow.index]" />
+                <InstanceLog
+                  :log="filteredLogs[virtualRow.index]"
+                  :collapsed="isLogCollapsed(String(virtualRow.key))"
+                  @toggle="toggleLog(String(virtualRow.key))"
+                />
               </div>
             </div>
           </div>
