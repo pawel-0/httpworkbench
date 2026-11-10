@@ -103,22 +103,27 @@ const handleMouseLeave = (event: MouseEvent) => {
           </span>
           <span
             class="min-w-0 truncate font-mono text-surface-800 dark:text-surface-200"
-            :title="summary"
-            >{{ summary }}</span
+            :title="collapsed ? summary : log.address"
+            >{{ collapsed ? summary : log.address }}</span
           >
         </span>
         <span
           class="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-x-2 gap-y-1"
         >
-          <span class="min-w-0 truncate font-mono" :title="log.address">{{
-            log.address
-          }}</span>
-          <span class="whitespace-nowrap" :title="absoluteTimestamp">{{
-            formattedTimestamp
-          }}</span>
+          <span class="inline-flex min-w-0 items-center gap-2">
+            <template v-if="collapsed">
+              <span class="min-w-0 truncate font-mono" :title="log.address">{{
+                log.address
+              }}</span>
+              <span class="text-surface-600 dark:text-surface-500">•</span>
+            </template>
+            <span class="whitespace-nowrap" :title="absoluteTimestamp">{{
+              formattedTimestamp
+            }}</span>
+          </span>
           <span
-            class="hidden whitespace-nowrap text-surface-600 dark:text-surface-500 min-[420px]:inline"
-            >• {{ absoluteTimestamp }}</span
+            class="hidden items-center gap-2 whitespace-nowrap text-surface-600 dark:text-surface-500 min-[420px]:inline-flex"
+            ><span>•</span><span>{{ absoluteTimestamp }}</span></span
           >
         </span>
       </button>
