@@ -361,7 +361,7 @@ const isWebhooksDialogVisible = ref(false);
 
       <div
         v-if="canManageInstance"
-        class="grid grid-cols-2 gap-2 sm:grid-cols-3"
+        class="instance-actions flex flex-wrap gap-2"
       >
         <Button
           label="Clone"
@@ -470,6 +470,11 @@ const isWebhooksDialogVisible = ref(false);
 </template>
 
 <style scoped>
+.instance-actions :deep(.p-button) {
+  flex: 1 0 max-content;
+  min-width: max-content;
+}
+
 :deep(.p-button) {
   min-width: 0;
 }
