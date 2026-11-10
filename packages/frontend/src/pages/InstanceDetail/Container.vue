@@ -175,7 +175,6 @@ const exitLogOnEscape = (event: KeyboardEvent) => {
                   Logs
                 </h2>
                 <Button
-                  icon="pi pi-angle-double-up"
                   severity="secondary"
                   text
                   rounded
@@ -185,9 +184,16 @@ const exitLogOnEscape = (event: KeyboardEvent) => {
                   title="Collapse all requests"
                   :disabled="isLoadingInstance || logs.length === 0"
                   @click="setAllLogsCollapsed(true)"
-                />
+                >
+                  <span
+                    class="inline-flex items-center gap-0.5"
+                    aria-hidden="true"
+                  >
+                    <i class="pi pi-list text-sm!" />
+                    <i class="pi pi-angle-double-up text-[10px]!" />
+                  </span>
+                </Button>
                 <Button
-                  icon="pi pi-angle-double-down"
                   severity="secondary"
                   text
                   rounded
@@ -197,7 +203,15 @@ const exitLogOnEscape = (event: KeyboardEvent) => {
                   title="Expand all requests"
                   :disabled="isLoadingInstance || logs.length === 0"
                   @click="setAllLogsCollapsed(false)"
-                />
+                >
+                  <span
+                    class="inline-flex items-center gap-0.5"
+                    aria-hidden="true"
+                  >
+                    <i class="pi pi-list text-sm!" />
+                    <i class="pi pi-angle-double-down text-[10px]!" />
+                  </span>
+                </Button>
                 <Button
                   v-if="isSidePanelHidden"
                   severity="secondary"
