@@ -317,7 +317,7 @@ const actionItems = computed<MenuItem[]>(() => [
       <div class="flex flex-col gap-2">
         <label
           for="instance-host-input"
-          class="text-sm font-medium text-surface-700 dark:text-surface-300"
+          class="font-semibold text-surface-900 dark:text-surface-0"
         >
           Hostname
         </label>
@@ -347,57 +347,56 @@ const actionItems = computed<MenuItem[]>(() => [
     </div>
 
     <div class="flex min-h-[260px] flex-1 flex-col gap-3 lg:min-h-0">
-      <div class="flex justify-between items-end">
-        <div>
+      <div>
+        <div class="flex flex-wrap items-center justify-between gap-2">
           <h3 class="font-semibold text-surface-900 dark:text-surface-0">
             Default response
           </h3>
-          <p class="text-xs text-surface-600 dark:text-surface-400 mt-1">
-            Used when no path override matches the incoming request.
-          </p>
+          <div v-if="canManageInstance" class="flex items-center gap-2">
+            <input
+              v-if="canManageInstance"
+              :ref="setFileInputRef"
+              type="file"
+              class="hidden"
+              accept=".txt,.json,.xml,.html"
+              @change="handleFileUpload"
+            />
+            <Button
+              v-if="canManageInstance"
+              label="Upload"
+              icon="pi pi-upload"
+              severity="secondary"
+              size="small"
+              outlined
+              class="min-w-0 justify-center"
+              @click="triggerFileUpload"
+            />
+            <Button
+              v-if="canManageInstance"
+              label="Builder"
+              icon="pi pi-wrench"
+              severity="secondary"
+              size="small"
+              outlined
+              class="min-w-0 justify-center"
+              @click="handleOpenBuilder"
+            />
+            <Button
+              v-if="canManageInstance"
+              label="Save"
+              icon="pi pi-save"
+              size="small"
+              outlined
+              class="min-w-0 justify-center"
+              :loading="isUpdating"
+              :disabled="!isDirty || isUpdating"
+              @click="handleSave"
+            />
+          </div>
         </div>
-      </div>
-
-      <div class="mb-2 grid grid-cols-3 gap-2">
-        <input
-          v-if="canManageInstance"
-          :ref="setFileInputRef"
-          type="file"
-          class="hidden"
-          accept=".txt,.json,.xml,.html"
-          @change="handleFileUpload"
-        />
-        <Button
-          v-if="canManageInstance"
-          label="Upload"
-          icon="pi pi-upload"
-          severity="secondary"
-          size="small"
-          outlined
-          class="min-w-0 justify-center"
-          @click="triggerFileUpload"
-        />
-        <Button
-          v-if="canManageInstance"
-          label="Builder"
-          icon="pi pi-wrench"
-          severity="secondary"
-          size="small"
-          outlined
-          class="min-w-0 justify-center"
-          @click="handleOpenBuilder"
-        />
-        <Button
-          v-if="canManageInstance"
-          label="Save"
-          icon="pi pi-save"
-          size="small"
-          outlined
-          class="min-w-0 justify-center"
-          :loading="isUpdating"
-          :disabled="!isDirty || isUpdating"
-          @click="handleSave"
-        />
+        <p class="mt-1 text-xs text-surface-600 dark:text-surface-400">
+          Used when no path override matches the incoming request.
+        </p>
       </div>
 
       <div class="h-72 min-h-0 overflow-hidden rounded-md lg:h-auto lg:flex-1">
