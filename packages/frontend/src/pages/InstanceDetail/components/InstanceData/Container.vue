@@ -17,7 +17,6 @@ import {
 } from "vue";
 import { useInstanceDataLogic } from "./useLogic";
 import { useWebhooks } from "@/queries/domains/useWebhooks";
-import { useResizeObserver } from "@vueuse/core";
 
 const props = defineProps<{
   instance: Instance;
@@ -116,68 +115,6 @@ const showVisibility = computed(() => {
 });
 
 const isWebhooksDialogVisible = ref(false);
-const actionsRef = ref<HTMLElement | null>(null);
-const actionsFitOneRow = ref(false);
-const wrappedActionBasis = ref("calc((100% - 1rem) / 3)");
-
-const updateActionLayout = () => {
-  const container = actionsRef.value;
-  if (container === null) return;
-  const buttons = Array.from(
-    container.querySelectorAll<HTMLElement>(".p-button"),
-  );
-  const widest = Math.max(
-    0,
-    ...buttons.map((button) => {
-      const style = getComputedStyle(button);
-      const children = Array.from(button.children).filter(
-        (child) => getComputedStyle(child).display !== "none",
-      );
-      const contentWidth = children.reduce((width, child) => {
-        if (child.classList.contains("p-button-label")) {
-          const range = document.createRange();
-          range.selectNodeContents(child);
-          return width + range.getBoundingClientRect().width;
-        }
-        return width + child.getBoundingClientRect().width;
-      }, 0);
-      return Math.ceil(
-        contentWidth +
-          (parseFloat(style.columnGap) || 0) *
-            Math.max(0, children.length - 1) +
-          parseFloat(style.paddingLeft) +
-          parseFloat(style.paddingRight) +
-          parseFloat(style.borderLeftWidth) +
-          parseFloat(style.borderRightWidth),
-      );
-    }),
-  );
-  const gap = parseFloat(getComputedStyle(container).columnGap) || 0;
-  const columns = Math.max(
-    1,
-    Math.min(
-      Math.ceil(buttons.length / 2),
-      Math.floor((container.clientWidth + gap) / (widest + gap)),
-    ),
-  );
-  wrappedActionBasis.value = `calc((100% - ${(columns - 1) * gap}px) / ${columns})`;
-  actionsFitOneRow.value =
-    widest * buttons.length + gap * Math.max(0, buttons.length - 1) <=
-    container.clientWidth;
-};
-
-useResizeObserver(actionsRef, updateActionLayout);
-watch(
-  [
-    isLocked,
-    isPublic,
-    () => selectedWebhookIds.value.length,
-    canManageInstance,
-    isGuest,
-  ],
-  updateActionLayout,
-  { flush: "post" },
-);
 </script>
 
 <template>
@@ -386,7 +323,7 @@ watch(
 
     <div
       v-if="canManageInstance || showExpirationNotice"
-      class="mt-auto flex flex-col gap-3"
+      class="@container mt-auto flex flex-col gap-3"
     >
       <div
         v-if="showExpirationNotice"
@@ -424,10 +361,7 @@ watch(
 
       <div
         v-if="canManageInstance"
-        ref="actionsRef"
-        class="instance-actions flex flex-wrap gap-2"
-        :class="{ 'instance-actions-single-row': actionsFitOneRow }"
-        :style="{ '--instance-action-basis': wrappedActionBasis }"
+        class="instance-actions grid grid-cols-2 gap-2 @min-[25rem]:grid-cols-3 @min-[50rem]:grid-cols-6"
       >
         <Button
           label="Clone"
@@ -536,13 +470,8 @@ watch(
 </template>
 
 <style scoped>
-.instance-actions :deep(.p-button) {
-  flex: 1 0 var(--instance-action-basis);
-  min-width: max-content;
-}
-
-.instance-actions-single-row :deep(.p-button) {
-  flex-basis: 0;
+.instance-actions :deep(.p-button-label) {
+  white-space: normal;
 }
 
 :deep(.p-button) {
