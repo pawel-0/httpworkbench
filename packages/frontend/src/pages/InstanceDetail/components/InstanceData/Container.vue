@@ -315,29 +315,31 @@ const actionItems = computed<MenuItem[]>(() => [
       </div>
 
       <div class="flex flex-col gap-2">
-        <label
-          for="instance-host-input"
-          class="font-semibold text-surface-900 dark:text-surface-0"
-        >
-          Hostname
-        </label>
-        <div class="flex gap-2">
-          <InputText
-            id="instance-host-input"
-            :value="instanceHost"
-            readonly
-            size="small"
-            aria-label="Interaction host"
-            class="min-w-0 w-full bg-surface-50 font-mono text-sm dark:bg-surface-800"
-          />
-          <Button
-            icon="pi pi-copy"
-            severity="secondary"
-            outlined
-            size="small"
-            aria-label="Copy interaction host"
-            @click="handleCopy"
-          />
+        <div class="flex flex-wrap items-center gap-3">
+          <label
+            for="instance-host-input"
+            class="shrink-0 font-semibold text-surface-900 dark:text-surface-0"
+          >
+            Hostname
+          </label>
+          <div class="flex min-w-0 flex-[1_1_16rem] gap-2">
+            <InputText
+              id="instance-host-input"
+              :value="instanceHost"
+              readonly
+              size="small"
+              aria-label="Interaction host"
+              class="min-w-0 w-full bg-surface-50 font-mono text-sm dark:bg-surface-800"
+            />
+            <Button
+              icon="pi pi-copy"
+              severity="secondary"
+              outlined
+              size="small"
+              aria-label="Copy interaction host"
+              @click="handleCopy"
+            />
+          </div>
         </div>
         <p class="text-xs text-surface-600 dark:text-surface-400">
           Send HTTP, HTTPS, DNS, and SMTP requests to this host to see them
