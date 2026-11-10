@@ -43,6 +43,11 @@ const isLogCollapsed = (id: string) =>
 const toggleLog = (id: string) => {
   logCollapseOverrides.value.set(id, !isLogCollapsed(id));
 };
+const setAllLogsCollapsed = (collapsed: boolean) => {
+  for (const log of logs.value) {
+    logCollapseOverrides.value.set(log.id, collapsed);
+  }
+};
 watch(instanceId, () => logCollapseOverrides.value.clear());
 watch(logs, (currentLogs) => {
   const ids = new Set(currentLogs.map((log) => log.id));
@@ -169,6 +174,30 @@ const exitLogOnEscape = (event: KeyboardEvent) => {
                 <h2 class="font-semibold text-surface-900 dark:text-surface-0">
                   Logs
                 </h2>
+                <Button
+                  icon="pi pi-angle-double-up"
+                  severity="secondary"
+                  text
+                  rounded
+                  size="small"
+                  class="shrink-0"
+                  aria-label="Collapse all requests"
+                  title="Collapse all requests"
+                  :disabled="isLoadingInstance || logs.length === 0"
+                  @click="setAllLogsCollapsed(true)"
+                />
+                <Button
+                  icon="pi pi-angle-double-down"
+                  severity="secondary"
+                  text
+                  rounded
+                  size="small"
+                  class="shrink-0"
+                  aria-label="Expand all requests"
+                  title="Expand all requests"
+                  :disabled="isLoadingInstance || logs.length === 0"
+                  @click="setAllLogsCollapsed(false)"
+                />
                 <Button
                   v-if="isSidePanelHidden"
                   severity="secondary"

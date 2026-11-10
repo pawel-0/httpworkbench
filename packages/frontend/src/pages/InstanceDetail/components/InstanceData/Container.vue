@@ -317,7 +317,7 @@ const actionItems = computed<MenuItem[]>(() => [
       <div class="flex flex-col gap-2">
         <label
           for="instance-host-input"
-          class="text-sm font-medium text-surface-700 dark:text-surface-300"
+          class="font-semibold text-surface-900 dark:text-surface-0"
         >
           Hostname
         </label>
