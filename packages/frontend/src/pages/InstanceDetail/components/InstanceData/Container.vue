@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import Button from "primevue/button";
+import Menu from "primevue/menu";
+import type { MenuItem } from "primevue/menuitem";
 import InputText from "primevue/inputtext";
 import Dialog from "primevue/dialog";
 import MultiSelect from "primevue/multiselect";
@@ -115,6 +117,63 @@ const showVisibility = computed(() => {
 });
 
 const isWebhooksDialogVisible = ref(false);
+const actionsMenu = ref<InstanceType<typeof Menu>>();
+const isActionsMenuVisible = ref(false);
+const actionItems = computed<MenuItem[]>(() => [
+  {
+    label: "Clone",
+    icon: isCloning.value ? "pi pi-spinner pi-spin" : "pi pi-clone",
+    disabled: isCloning.value,
+    command: handleClone,
+  },
+  {
+    label: "Clear Logs",
+    icon: isClearingLogs.value ? "pi pi-spinner pi-spin" : "pi pi-ban",
+    disabled: isClearingLogs.value,
+    command: handleClearLogs,
+  },
+  {
+    label: isLocked.value ? "Unlock" : "Lock",
+    icon: isSettingLocked.value
+      ? "pi pi-spinner pi-spin"
+      : isLocked.value
+        ? "pi pi-lock-open"
+        : "pi pi-lock",
+    disabled: isSettingLocked.value,
+    title: lockTooltip.value,
+    command: handleToggleLock,
+  },
+  {
+    label:
+      selectedWebhookIds.value.length > 0
+        ? `Webhooks (${selectedWebhookIds.value.length})`
+        : "Webhooks",
+    icon: "pi pi-bell",
+    visible: !isGuest.value,
+    command: () => {
+      isWebhooksDialogVisible.value = true;
+    },
+  },
+  {
+    label: isPublic.value ? "Make Private" : "Make Public",
+    icon: isSettingPublic.value
+      ? "pi pi-spinner pi-spin"
+      : isPublic.value
+        ? "pi pi-lock"
+        : "pi pi-globe",
+    visible: showVisibility.value,
+    disabled: isSettingPublic.value,
+    command: handleTogglePublic,
+  },
+  { separator: true },
+  {
+    key: "delete",
+    label: "Delete",
+    icon: isDeleting.value ? "pi pi-spinner pi-spin" : "pi pi-trash",
+    disabled: isLocked.value || isDeleting.value,
+    command: handleDelete,
+  },
+]);
 </script>
 
 <template>
@@ -165,52 +224,90 @@ const isWebhooksDialogVisible = ref(false);
             </template>
           </div>
 
-          <Button
-            severity="secondary"
-            text
-            rounded
-            size="small"
-            class="shrink-0"
-            aria-label="Hide details panel"
-            title="Hide details"
-            @click="emit('hidePanel')"
-          >
-            <svg
-              class="h-4 w-4"
-              viewBox="0 0 20 20"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              aria-hidden="true"
+          <div class="flex shrink-0 items-center gap-1">
+            <Button
+              severity="secondary"
+              text
+              rounded
+              size="small"
+              class="shrink-0"
+              aria-label="Hide details panel"
+              title="Hide details"
+              @click="emit('hidePanel')"
             >
-              <rect
-                x="2.25"
-                y="3.25"
-                width="15.5"
-                height="13.5"
-                rx="2"
-                stroke="currentColor"
-                stroke-width="1.5"
-              />
-              <path
-                d="M7 3.25V16.75"
-                stroke="currentColor"
-                stroke-width="1.5"
-              />
-              <path
-                d="M12.75 10H9.75"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linecap="round"
-              />
-              <path
-                d="M11.25 8.5L9.75 10L11.25 11.5"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </Button>
+              <svg
+                class="h-4 w-4"
+                viewBox="0 0 20 20"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
+                <rect
+                  x="2.25"
+                  y="3.25"
+                  width="15.5"
+                  height="13.5"
+                  rx="2"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                />
+                <path
+                  d="M7 3.25V16.75"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                />
+                <path
+                  d="M12.75 10H9.75"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                />
+                <path
+                  d="M11.25 8.5L9.75 10L11.25 11.5"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </Button>
+            <Button
+              v-if="canManageInstance"
+              severity="secondary"
+              text
+              rounded
+              class="h-9! w-9! shrink-0 p-0!"
+              aria-label="Instance actions"
+              title="Instance actions"
+              aria-haspopup="menu"
+              :aria-controls="`instance-actions-${instance.id}`"
+              :aria-expanded="isActionsMenuVisible"
+              @click="actionsMenu?.toggle($event)"
+            >
+              <i class="pi pi-ellipsis-v text-xl!" aria-hidden="true" />
+            </Button>
+            <Menu
+              v-if="canManageInstance"
+              :id="`instance-actions-${instance.id}`"
+              ref="actionsMenu"
+              :model="actionItems"
+              popup
+              aria-label="Instance actions"
+              @show="isActionsMenuVisible = true"
+              @hide="isActionsMenuVisible = false"
+            >
+              <template #item="{ item, props: itemProps }">
+                <a
+                  v-bind="itemProps.action"
+                  class="text-sm!"
+                  :class="{ 'text-red-500!': item.key === 'delete' }"
+                >
+                  <i :class="item.icon" class="text-sm!" aria-hidden="true" />
+                  <span>{{ item.label }}</span>
+                </a>
+              </template>
+            </Menu>
+          </div>
         </div>
         <span class="text-sm text-surface-600 dark:text-surface-400">
           {{ formattedDate }}
@@ -321,10 +418,7 @@ const isWebhooksDialogVisible = ref(false);
       :editable="canManageInstance && !isGuest"
     />
 
-    <div
-      v-if="canManageInstance || showExpirationNotice"
-      class="@container mt-auto flex flex-col gap-3"
-    >
+    <div v-if="showExpirationNotice" class="mt-auto">
       <div
         v-if="showExpirationNotice"
         class="flex min-w-0 items-center gap-2 rounded-md bg-surface-50 px-2 py-1 text-xs dark:bg-surface-800 sm:px-3"
@@ -356,84 +450,6 @@ const isWebhooksDialogVisible = ref(false);
           v-tooltip.top="'Extend'"
           :loading="isExtending"
           @click="handleExtend"
-        />
-      </div>
-
-      <div
-        v-if="canManageInstance"
-        class="instance-actions grid grid-cols-2 gap-2 @min-[25rem]:grid-cols-3 @min-[50rem]:grid-cols-6"
-      >
-        <Button
-          label="Clone"
-          icon="pi pi-clone"
-          severity="secondary"
-          outlined
-          size="small"
-          class="min-w-0 justify-center"
-          :loading="isCloning"
-          @click="handleClone"
-        />
-        <Button
-          label="Clear Logs"
-          icon="pi pi-ban"
-          severity="secondary"
-          outlined
-          size="small"
-          class="min-w-0 justify-center"
-          :loading="isClearingLogs"
-          @click="handleClearLogs"
-        />
-        <Button
-          :label="isLocked ? 'Unlock' : 'Lock'"
-          :icon="isLocked ? 'pi pi-lock-open' : 'pi pi-lock'"
-          severity="secondary"
-          outlined
-          size="small"
-          class="min-w-0 justify-center"
-          :loading="isSettingLocked"
-          @click="handleToggleLock"
-          v-tooltip.top="lockTooltip"
-        />
-        <Button
-          v-if="!isGuest"
-          :label="
-            selectedWebhookIds.length > 0
-              ? `Webhooks (${selectedWebhookIds.length})`
-              : 'Webhooks'
-          "
-          icon="pi pi-bell"
-          severity="secondary"
-          outlined
-          size="small"
-          class="min-w-0 justify-center"
-          @click="isWebhooksDialogVisible = true"
-        />
-        <Button
-          v-if="showVisibility"
-          :label="isPublic ? 'Make Private' : 'Make Public'"
-          :icon="isPublic ? 'pi pi-lock' : 'pi pi-globe'"
-          severity="secondary"
-          outlined
-          size="small"
-          class="min-w-0 justify-center"
-          :loading="isSettingPublic"
-          @click="handleTogglePublic"
-          v-tooltip.top="
-            isPublic
-              ? 'Revoke public access to this instance'
-              : 'Allow anyone with the ID to view details and logs of this instance'
-          "
-        />
-        <Button
-          label="Delete"
-          icon="pi pi-trash"
-          severity="danger"
-          outlined
-          size="small"
-          class="min-w-0 justify-center"
-          :loading="isDeleting"
-          :disabled="isLocked"
-          @click="handleDelete"
         />
       </div>
     </div>
@@ -470,10 +486,6 @@ const isWebhooksDialogVisible = ref(false);
 </template>
 
 <style scoped>
-.instance-actions :deep(.p-button-label) {
-  white-space: normal;
-}
-
 :deep(.p-button) {
   min-width: 0;
 }
