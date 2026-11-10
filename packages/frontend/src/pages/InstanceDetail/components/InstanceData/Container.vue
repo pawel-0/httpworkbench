@@ -222,21 +222,70 @@ const actionItems = computed<MenuItem[]>(() => [
                 @click="startEditingLabel"
               />
             </template>
+          </div>
+
+          <div class="flex shrink-0 items-center gap-1">
             <Button
-              v-if="canManageInstance"
-              icon="pi pi-ellipsis-v"
               severity="secondary"
               text
               rounded
               size="small"
               class="shrink-0"
+              aria-label="Hide details panel"
+              title="Hide details"
+              @click="emit('hidePanel')"
+            >
+              <svg
+                class="h-4 w-4"
+                viewBox="0 0 20 20"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
+                <rect
+                  x="2.25"
+                  y="3.25"
+                  width="15.5"
+                  height="13.5"
+                  rx="2"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                />
+                <path
+                  d="M7 3.25V16.75"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                />
+                <path
+                  d="M12.75 10H9.75"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                />
+                <path
+                  d="M11.25 8.5L9.75 10L11.25 11.5"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </Button>
+            <Button
+              v-if="canManageInstance"
+              severity="secondary"
+              text
+              rounded
+              class="h-9! w-9! shrink-0 p-0!"
               aria-label="Instance actions"
               title="Instance actions"
               aria-haspopup="menu"
               :aria-controls="`instance-actions-${instance.id}`"
               :aria-expanded="isActionsMenuVisible"
               @click="actionsMenu?.toggle($event)"
-            />
+            >
+              <i class="pi pi-ellipsis-v text-xl!" aria-hidden="true" />
+            </Button>
             <Menu
               v-if="canManageInstance"
               :id="`instance-actions-${instance.id}`"
@@ -250,61 +299,15 @@ const actionItems = computed<MenuItem[]>(() => [
               <template #item="{ item, props: itemProps }">
                 <a
                   v-bind="itemProps.action"
+                  class="text-sm!"
                   :class="{ 'text-red-500!': item.key === 'delete' }"
                 >
-                  <i :class="item.icon" aria-hidden="true" />
+                  <i :class="item.icon" class="text-sm!" aria-hidden="true" />
                   <span>{{ item.label }}</span>
                 </a>
               </template>
             </Menu>
           </div>
-
-          <Button
-            severity="secondary"
-            text
-            rounded
-            size="small"
-            class="shrink-0"
-            aria-label="Hide details panel"
-            title="Hide details"
-            @click="emit('hidePanel')"
-          >
-            <svg
-              class="h-4 w-4"
-              viewBox="0 0 20 20"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              aria-hidden="true"
-            >
-              <rect
-                x="2.25"
-                y="3.25"
-                width="15.5"
-                height="13.5"
-                rx="2"
-                stroke="currentColor"
-                stroke-width="1.5"
-              />
-              <path
-                d="M7 3.25V16.75"
-                stroke="currentColor"
-                stroke-width="1.5"
-              />
-              <path
-                d="M12.75 10H9.75"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linecap="round"
-              />
-              <path
-                d="M11.25 8.5L9.75 10L11.25 11.5"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </Button>
         </div>
         <span class="text-sm text-surface-600 dark:text-surface-400">
           {{ formattedDate }}
