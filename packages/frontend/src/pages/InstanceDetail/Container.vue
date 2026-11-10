@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useVirtualizer } from "@tanstack/vue-virtual";
+import { useInstanceDetailPreferencesStore } from "@/stores/instanceDetailPreferences";
 import Button from "primevue/button";
 import { computed, ref, watch } from "vue";
 import { useRoute } from "vue-router";
@@ -35,19 +36,18 @@ const {
 } = useLogsPanelControls(logs, setSidePanelHidden);
 
 // Keep state outside virtualized cards so scrolling and filtering preserve it.
-const collapsedLogIds = ref(new Set<string>());
+const preferences = useInstanceDetailPreferencesStore();
+const logCollapseOverrides = ref(new Map<string, boolean>());
+const isLogCollapsed = (id: string) =>
+  logCollapseOverrides.value.get(id) ?? preferences.autoCollapseLogs;
 const toggleLog = (id: string) => {
-  if (collapsedLogIds.value.has(id)) {
-    collapsedLogIds.value.delete(id);
-  } else {
-    collapsedLogIds.value.add(id);
-  }
+  logCollapseOverrides.value.set(id, !isLogCollapsed(id));
 };
-watch(instanceId, () => collapsedLogIds.value.clear());
+watch(instanceId, () => logCollapseOverrides.value.clear());
 watch(logs, (currentLogs) => {
   const ids = new Set(currentLogs.map((log) => log.id));
-  for (const id of collapsedLogIds.value) {
-    if (!ids.has(id)) collapsedLogIds.value.delete(id);
+  for (const id of logCollapseOverrides.value.keys()) {
+    if (!ids.has(id)) logCollapseOverrides.value.delete(id);
   }
 });
 
@@ -55,7 +55,7 @@ const scrollerRef = ref<HTMLElement | null>(null);
 
 const estimateLogSize = (index: number) => {
   const log = filteredLogs.value[index];
-  if (collapsedLogIds.value.has(log.id)) return 64;
+  if (isLogCollapsed(log.id)) return 64;
   switch (log?.type) {
     case "dns":
       return 220;
@@ -321,7 +321,7 @@ const exitLogOnEscape = (event: KeyboardEvent) => {
               >
                 <InstanceLog
                   :log="filteredLogs[virtualRow.index]"
-                  :collapsed="collapsedLogIds.has(String(virtualRow.key))"
+                  :collapsed="isLogCollapsed(String(virtualRow.key))"
                   @toggle="toggleLog(String(virtualRow.key))"
                 />
               </div>

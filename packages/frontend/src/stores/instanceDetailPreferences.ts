@@ -6,6 +6,7 @@ const STORAGE_KEY = "httpworkbench.instanceDetail.preferences";
 const DEFAULT_LOG_TYPES: LogType[] = ["http", "dns", "smtp"];
 
 type InstanceDetailPreferences = {
+  autoCollapseLogs: boolean;
   sidePanelHidden: boolean;
   selectedLogTypes: LogType[];
 };
@@ -14,6 +15,7 @@ const isLogType = (value: unknown): value is LogType =>
   value === "http" || value === "dns" || value === "smtp";
 
 const getDefaultPreferences = (): InstanceDetailPreferences => ({
+  autoCollapseLogs: false,
   sidePanelHidden: false,
   selectedLogTypes: [...DEFAULT_LOG_TYPES],
 });
@@ -43,6 +45,7 @@ const readPreferences = (): InstanceDetailPreferences => {
       : DEFAULT_LOG_TYPES;
 
     return {
+      autoCollapseLogs: parsed.autoCollapseLogs === true,
       sidePanelHidden:
         typeof parsed.sidePanelHidden === "boolean"
           ? parsed.sidePanelHidden
@@ -64,13 +67,15 @@ export const useInstanceDetailPreferencesStore = defineStore(
   "instanceDetailPreferences",
   () => {
     const stored = readPreferences();
+    const autoCollapseLogs = ref(stored.autoCollapseLogs);
     const sidePanelHidden = ref(stored.sidePanelHidden);
     const selectedLogTypes = ref(stored.selectedLogTypes);
 
     watch(
-      [sidePanelHidden, selectedLogTypes],
-      ([nextSidePanelHidden, nextSelectedLogTypes]) => {
+      [autoCollapseLogs, sidePanelHidden, selectedLogTypes],
+      ([nextAutoCollapseLogs, nextSidePanelHidden, nextSelectedLogTypes]) => {
         writePreferences({
+          autoCollapseLogs: nextAutoCollapseLogs,
           sidePanelHidden: nextSidePanelHidden,
           selectedLogTypes: nextSelectedLogTypes,
         });
@@ -79,6 +84,7 @@ export const useInstanceDetailPreferencesStore = defineStore(
     );
 
     return {
+      autoCollapseLogs,
       sidePanelHidden,
       selectedLogTypes,
     };
