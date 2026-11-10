@@ -22,12 +22,16 @@ import { useWebhooks } from "@/queries/domains/useWebhooks";
 
 const props = defineProps<{
   instance: Instance;
+  canManageInstance: boolean;
+  isClearingLogs: boolean;
 }>();
 const emit = defineEmits<{
   hidePanel: [];
+  clearLogs: [];
 }>();
 
-const { instance } = toRefs(props);
+const { instance, isClearingLogs } = toRefs(props);
+const canManageInstance = computed(() => props.canManageInstance);
 
 const {
   instanceHost,
@@ -36,14 +40,12 @@ const {
   isUpdating,
   isCloning,
   isDeleting,
-  isClearingLogs,
   isLocked,
   isSettingLocked,
   handleSave,
   handleEditorChange,
   handleDelete,
   handleClone,
-  handleClearLogs,
   handleToggleLock,
   handleFileUpload,
   fileInputRef,
@@ -57,7 +59,6 @@ const {
   isExtending,
   handleExtend,
   isGuest,
-  canManageInstance,
   handleOpenBuilder,
   displayName,
   isEditingLabel,
@@ -69,7 +70,7 @@ const {
   isPublic,
   isSettingPublic,
   handleTogglePublic,
-} = useInstanceDataLogic(instance);
+} = useInstanceDataLogic(instance, canManageInstance);
 
 const { data: webhooks } = useWebhooks({
   enabled: computed(() => canManageInstance.value && !isGuest.value),
@@ -130,7 +131,7 @@ const actionItems = computed<MenuItem[]>(() => [
     label: "Clear Logs",
     icon: isClearingLogs.value ? "pi pi-spinner pi-spin" : "pi pi-ban",
     disabled: isClearingLogs.value,
-    command: handleClearLogs,
+    command: () => emit("clearLogs"),
   },
   {
     label: isLocked.value ? "Unlock" : "Lock",
@@ -315,22 +316,15 @@ const actionItems = computed<MenuItem[]>(() => [
       </div>
 
       <div class="flex flex-col gap-2">
-        <label
-          for="instance-host-input"
-          class="font-semibold text-surface-900 dark:text-surface-0"
-        >
-          Hostname
-        </label>
-        <div class="flex gap-2">
-          <InputText
-            id="instance-host-input"
-            :value="instanceHost"
-            readonly
-            size="small"
-            aria-label="Interaction host"
-            class="min-w-0 w-full bg-surface-50 font-mono text-sm dark:bg-surface-800"
-          />
+        <div class="flex items-center justify-between gap-2">
+          <label
+            for="instance-host-input"
+            class="font-semibold text-surface-900 dark:text-surface-0"
+          >
+            Hostname
+          </label>
           <Button
+            label="Copy"
             icon="pi pi-copy"
             severity="secondary"
             outlined
@@ -339,10 +333,22 @@ const actionItems = computed<MenuItem[]>(() => [
             @click="handleCopy"
           />
         </div>
-        <p class="text-xs text-surface-600 dark:text-surface-400">
+        <p
+          id="instance-host-description"
+          class="text-xs text-surface-600 dark:text-surface-400"
+        >
           Send HTTP, HTTPS, DNS, and SMTP requests to this host to see them
           appear in the logs.
         </p>
+        <InputText
+          id="instance-host-input"
+          :value="instanceHost"
+          readonly
+          size="small"
+          aria-label="Interaction host"
+          aria-describedby="instance-host-description"
+          class="min-w-0 w-full bg-surface-50 font-mono text-sm dark:bg-surface-800"
+        />
       </div>
     </div>
 

@@ -14,6 +14,9 @@ const route = useRoute();
 const instanceId = computed(() => route.params.id as string);
 const {
   instance,
+  canManageInstance,
+  isClearingLogs,
+  handleClearLogs,
   isLoadingInstance,
   logs,
   showNotFound,
@@ -145,6 +148,9 @@ const exitLogOnEscape = (event: KeyboardEvent) => {
         <InstanceData
           v-if="instance && !isLoadingInstance"
           :instance="instance"
+          :can-manage-instance="canManageInstance"
+          :is-clearing-logs="isClearingLogs"
+          @clear-logs="handleClearLogs"
           @hide-panel="setSidePanelHidden(true)"
         />
 
@@ -165,7 +171,7 @@ const exitLogOnEscape = (event: KeyboardEvent) => {
       <div class="flex flex-1 min-h-0 flex-col p-3 sm:p-4">
         <div class="shrink-0">
           <div class="flex flex-col gap-3">
-            <div class="flex items-center justify-between gap-3">
+            <div class="flex flex-wrap items-center justify-between gap-3">
               <div class="flex min-w-0 items-center gap-2">
                 <i
                   class="pi pi-list text-sm text-surface-700 dark:text-surface-400"
@@ -212,6 +218,20 @@ const exitLogOnEscape = (event: KeyboardEvent) => {
                     <i class="pi pi-angle-double-down text-[10px]!" />
                   </span>
                 </Button>
+                <Button
+                  v-if="canManageInstance && !isLoadingInstance"
+                  icon="pi pi-ban"
+                  severity="secondary"
+                  text
+                  rounded
+                  size="small"
+                  class="shrink-0"
+                  aria-label="Clear logs"
+                  title="Clear logs"
+                  :loading="isClearingLogs"
+                  :disabled="logs.length === 0 || isClearingLogs"
+                  @click="handleClearLogs"
+                />
                 <Button
                   v-if="isSidePanelHidden"
                   severity="secondary"

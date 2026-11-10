@@ -1,6 +1,6 @@
 import { useConfirm } from "primevue/useconfirm";
-import { GUEST_OWNER_ID, type Instance } from "shared";
-import { computed, ref, type Ref } from "vue";
+import type { Instance } from "shared";
+import { computed, ref, type ComputedRef, type Ref } from "vue";
 import { useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
 import { useTimeAgo } from "@vueuse/core";
@@ -8,7 +8,6 @@ import dayjs from "dayjs";
 import { useNotify } from "@/composables";
 import { config } from "@/config";
 import {
-  useClearLogs,
   useCloneInstance,
   useDeleteInstance,
   useExtendInstance,
@@ -17,11 +16,13 @@ import {
   useSetInstancePublic,
 } from "@/queries/domains/useInstances";
 import { useAuthStore } from "@/stores/auth";
-import { useGuestInstancesStore } from "@/stores/guestInstances";
 import { isAbsent, isPresent } from "@/utils/types";
 import { useInstanceEditor } from "./useInstanceEditor";
 
-export const useInstanceDataLogic = (instance: Ref<Instance>) => {
+export const useInstanceDataLogic = (
+  instance: Ref<Instance>,
+  canManageInstance: ComputedRef<boolean>,
+) => {
   const notify = useNotify();
   const confirm = useConfirm();
   const router = useRouter();
@@ -29,8 +30,6 @@ export const useInstanceDataLogic = (instance: Ref<Instance>) => {
     useDeleteInstance();
   const { mutateAsync: cloneInstanceMutation, isPending: isCloning } =
     useCloneInstance();
-  const { mutateAsync: clearLogsMutation, isPending: isClearingLogs } =
-    useClearLogs();
   const { mutateAsync: extendInstanceMutation, isPending: isExtending } =
     useExtendInstance();
   const { mutateAsync: renameInstanceMutation } = useRenameInstance();
@@ -40,29 +39,13 @@ export const useInstanceDataLogic = (instance: Ref<Instance>) => {
     useSetInstancePublic();
 
   const authStore = useAuthStore();
-  const guestInstancesStore = useGuestInstancesStore();
   const { isGuest } = storeToRefs(authStore);
-  const { ids: guestInstanceIds } = storeToRefs(guestInstancesStore);
 
   const instanceHost = computed(() =>
     config.getInstanceHost(instance.value.id),
   );
   const isLocked = computed(() => instance.value.locked);
   const isPublic = computed(() => instance.value.public);
-  const canManageInstance = computed(() => {
-    if (instance.value.ownerId === GUEST_OWNER_ID) {
-      return (
-        isGuest.value && guestInstanceIds.value.includes(instance.value.id)
-      );
-    }
-
-    if (isGuest.value) {
-      return false;
-    }
-
-    return authStore.user?.id === instance.value.ownerId;
-  });
-
   const isEditingLabel = ref(false);
   const editLabel = ref("");
   const labelInputRef = ref<HTMLInputElement | null>(null);
@@ -189,35 +172,6 @@ export const useInstanceDataLogic = (instance: Ref<Instance>) => {
     }
   };
 
-  const handleClearLogs = async () => {
-    if (!canManageInstance.value) {
-      return;
-    }
-
-    confirm.require({
-      message: "Are you sure you want to clear all logs for this instance?",
-      header: "Clear Logs Confirmation",
-      icon: "pi pi-exclamation-triangle",
-      rejectProps: {
-        label: "Cancel",
-        severity: "secondary",
-        outlined: true,
-      },
-      acceptProps: {
-        label: "Clear",
-        severity: "danger",
-      },
-      accept: async () => {
-        try {
-          await clearLogsMutation(instance.value.id);
-          notify.success("Logs cleared");
-        } catch (e) {
-          notify.error("Failed to clear logs", e);
-        }
-      },
-    });
-  };
-
   const handleExtend = async () => {
     if (!canManageInstance.value) {
       return;
@@ -306,13 +260,11 @@ export const useInstanceDataLogic = (instance: Ref<Instance>) => {
     ...editor,
     isCloning,
     isDeleting,
-    isClearingLogs,
     isExtending,
     isLocked,
     isPublic,
     isSettingLocked,
     isSettingPublic,
-    canManageInstance,
     showExpirationNotice,
     expirationText,
     expirationExact,
@@ -324,7 +276,6 @@ export const useInstanceDataLogic = (instance: Ref<Instance>) => {
     handleCopy,
     handleDelete,
     handleClone,
-    handleClearLogs,
     handleToggleLock,
     handleTogglePublic,
     handleExtend,
